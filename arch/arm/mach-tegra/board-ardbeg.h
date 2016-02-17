@@ -107,7 +107,12 @@ on Laguna the LDO_EN signal comes from a GPIO expander and
 this is exposed as a fixed regulator directly handeled from
 machine driver of rt5639 and for ardebeg we use the below tegra
 GPIO, also the GPIO is same for T114 interposer and T124*/
-#define TEGRA_GPIO_LDO_EN	TEGRA_GPIO_PR2
+/*
+ * TEGRA_GPIO_PR2 is low active Shift_CTRL_OE[3] on Apalis TK1 controlling the
+ * level shifter of the debug UART1 receive pin!
+ * #define TEGRA_GPIO_LDO_EN	TEGRA_GPIO_PR2
+ */
+#define TEGRA_GPIO_LDO_EN	TEGRA_GPIO_PR1
 
 /*GPIOs used by board panel file */
 #define DSI_PANEL_RST_GPIO      TEGRA_GPIO_PH3

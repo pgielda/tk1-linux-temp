@@ -34,11 +34,9 @@
 			pinctrl-0 = <&as3722_default>;
 
 			as3722_default: pinmux@0 {
-				gpio0 {
-					pins = "gpio0";
-					function = "gpio";
-					output-low;
-				};
+				/* gpio2: PWR_EN_+V3.3 */
+
+				/* gpio7: +V1.6_LPO */
 
 				gpio1_2_4 {
 					pins = "gpio1", "gpio2", "gpio4";
@@ -281,53 +279,21 @@
 			     };
 
 				as3722_ldo1: ldo1 {
-				     regulator-name = "vdd-cam";
+				     regulator-name = "vddio-sdmmc-1";
 				     regulator-min-microvolt = <1800000>;
-				     regulator-max-microvolt = <1800000>;
+				     regulator-max-microvolt = <3300000>;
 				     regulator-boot-on;
 
 				     consumers {
 					     c1 {
-						     regulator-consumer-supply = "vddio_cam";
-						     regulator-consumer-device = "vi";
+						     regulator-consumer-supply = "vddio_sdmmc";
+						     regulator-consumer-device = "sdhci-tegra.1";
 					     };
 					     c2 {
-						     regulator-consumer-supply = "pwrdet_cam";
-
+						     regulator-consumer-supply = "pwrdet_sdmmc1";
 					     };
-					     c3 {
-						     regulator-consumer-supply = "vdd_cam_1v8_cam";
-					     };
-					     c4 {
-						     regulator-consumer-supply = "vif";
-						     regulator-consumer-device = "2-0010";
-					     };
-					     c5 {
-						     regulator-consumer-supply = "vif";
-						     regulator-consumer-device = "2-0036";
-					     };
-					     c6 {
-						     regulator-consumer-supply = "vdd_i2c";
-						     regulator-consumer-device = "2-000c";
-					     };
-					     c7 {
-						     regulator-consumer-supply = "vdd_i2c";
-						     regulator-consumer-device = "2-0010";
-					     };
-					     c8 {
-						     regulator-consumer-supply = "vif";
-						     regulator-consumer-device = "2-0018";
-					     };
-					     c9 {
-						     regulator-consumer-supply = "vi2c";
-						     regulator-consumer-device = "2-0030";
-					     };
-					     c10 {
-						     regulator-consumer-supply = "vif";
-						     regulator-consumer-device = "2-001a";
-					     };
-				     };
-			     };
+					};
+				};
 
 				as3722_ldo2: ldo2 {
 				     regulator-name = "avdd-dsi-csi";
@@ -396,8 +362,8 @@
 
 				as3722_ldo4: ldo4 {
 				     regulator-name = "avdd-cam";
-				     regulator-min-microvolt = <2800000>;
-				     regulator-max-microvolt = <2800000>;
+				     regulator-min-microvolt = <1800000>;
+				     regulator-max-microvolt = <1800000>;
 
 				     consumers {
 					     c1 {
@@ -420,28 +386,7 @@
 				     };
 			     };
 
-				as3722_ldo5: ldo5 {
-				     regulator-name = "vdd-1v2-cam";
-				     regulator-min-microvolt = <1175000>;
-				     regulator-max-microvolt = <1175000>;
-
-				     consumers {
-					     c1 {
-						     regulator-consumer-supply = "vdd_1v2_cam";
-					     };
-					     c2 {
-						     regulator-consumer-supply = "vdig";
-					     };
-					     c3 {
-						     regulator-consumer-supply = "vdig";
-						     regulator-consumer-device = "2-0018";
-					     };
-					     c4 {
-						     regulator-consumer-supply = "vdig";
-						     regulator-consumer-device = "2-0036";
-					     };
-				     };
-			     };
+				/* LDO5 not used */
 
 				as3722_ldo6: ldo6 {
 				     regulator-name = "vddio-sdmmc-2";
@@ -459,64 +404,11 @@
 				     };
 			     };
 
-				as3722_ldo7: ldo7 {
-				     regulator-name = "vdd-1v1-cam";
-				     regulator-min-microvolt = <1275000>;
-				     regulator-max-microvolt = <1275000>;
+				/* LDO7 not used */
 
-				     consumers {
-					     c1 {
-						     regulator-consumer-supply = "vdd_cam_1v1_cam";
-					     };
-					     c2 {
-						     regulator-consumer-supply = "imx135_reg2";
-					     };
-					     c3 {
-						     regulator-consumer-supply = "vdig_lv";
-						     regulator-consumer-device = "2-0010";
-					     };
-				     };
-			     };
+				/* LDO9 not used */
 
-				as3722_ldo9: ldo9 {
-				     regulator-name = "avdd-spi";
-				     regulator-min-microvolt = <3300000>;
-				     regulator-max-microvolt = <3300000>;
-				     regulator-boot-on;
-
-				     consumers {
-					     c1 {
-						     regulator-consumer-supply = "avdd";
-						     regulator-consumer-device = "spi0.0";
-					     };
-				     };
-			     };
-
-				as3722_ldo10: ldo10 {
-				      regulator-name = "vdd-2v7-cam";
-				      regulator-min-microvolt = <2800000>;
-				      regulator-max-microvolt = <2800000>;
-
-				      consumers {
-					      c1 {
-						      regulator-consumer-supply = "avdd_af1_cam";
-					      };
-					      c2 {
-						      regulator-consumer-supply = "avdd_cam1_cam";
-					      };
-					      c3 {
-						      regulator-consumer-supply = "imx135_reg1";
-					      };
-					      c4 {
-						      regulator-consumer-supply = "vdd";
-						      regulator-consumer-device = "2-000c";
-					      };
-					      c5 {
-						      regulator-consumer-supply = "vana_ar0261";
-						      regulator-consumer-device = "2-0036";
-					      };
-				      };
-			      };
+				/* LDO10 not used */
 
 				as3722_ldo11: ldo11 {
 				      regulator-name = "vpp-fuse";

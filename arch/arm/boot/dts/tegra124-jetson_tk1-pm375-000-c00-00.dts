@@ -9,7 +9,9 @@
 #include "tegra124-platforms/tegra124-pm359-camera-a00.dtsi"
 
 / {
-	model = "NVIDIA Tegra124 PM375";
+	model = "Toradex Apalis TK1";
+/* TBD
+	compatible = "toradex,apalis_tk1", "nvidia,tegra124"; */
 	compatible = "nvidia,jetson-tk1", "nvidia,tegra124";
 	nvidia,dtsfilename = __FILE__;
 	#address-cells = <2>;
@@ -19,6 +21,7 @@
 		bootargs = "tegraid=40.0.0.00.00 vmalloc=256M video=tegrafb console=ttyS0,115200n8 earlyprintk";
 	};
 
+	/* TBD */
 	pinmux {
 		pinctrl-names = "default", "drive", "unused", "suspend";
 		pinctrl-3 = <&pinmux_suspend>;
@@ -26,38 +29,48 @@
 		/* Change the pin dap_mclk1_req to required configurations */
 		unused_lowpower {
 			dap_mclk1_req_pee2 {
-			nvidia,pins = "dap_mclk1_req_pee2";
-			nvidia,function = "sata";
-			nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-			nvidia,pull = <TEGRA_PIN_PULL_NONE>;
-			nvidia,tristate = <TEGRA_PIN_DISABLE>;
+				nvidia,pins = "dap_mclk1_req_pee2";
+				nvidia,function = "sata";
+				nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
 			};
 		};
 
 		/* On suspend, make dap_mclk1_req to pull up */
 		pinmux_suspend: pins_on_suspend {
-		dap_mclk1_req_pee2 {
-			nvidia,pins = "dap_mclk1_req_pee2";
-			nvidia,pull = <TEGRA_PIN_PULL_UP>;
+			dap_mclk1_req_pee2 {
+				nvidia,pins = "dap_mclk1_req_pee2";
+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
 			};
 		};
 	};
 
-        serial@70006000 {
-                compatible = "nvidia,tegra114-hsuart";
-                status = "okay";
-        };
+	/* Apalis UART1 */
+	serial@70006000 {
+		compatible = "nvidia,tegra114-uart", "nvidia,tegra20-uart";
+		status = "okay";
+	};
 
-        serial@70006040 {
-                compatible = "nvidia,tegra114-hsuart";
-                status = "okay";
-        };
+	/* Apalis UART2 */
+	serial@70006040 {
+		compatible = "nvidia,tegra114-hsuart";
+		status = "okay";
+	};
 
-        serial@70006200 {
-                compatible = "nvidia,tegra114-hsuart";
-                status = "okay";
-        };
+	/* Apalis UART3 */
+	serial@70006200 {
+		compatible = "nvidia,tegra114-hsuart";
+		status = "okay";
+	};
 
+	/* Apalis UART4 */
+	serial@70006300 {
+		compatible = "nvidia,tegra114-hsuart";
+		status = "okay";
+	};
+
+	/* PWR_I2C: power I2C to audio codec, PMIC and temperature sensor */
 	i2c@7000d000 {
 		nvidia,bit-banging-xfer-after-shutdown;
 	};
@@ -67,6 +80,7 @@
 		reg = <0x0 0x80000000 0x0 0x80000000>;
 	};
 
+	/* TBD */
 	camera-pcl {
 		profiles {
 			ov4689@2_0036 {
@@ -84,14 +98,34 @@
 		};
 	};
 
+	/* SPI1: Apalis SPI1 */
 	spi@7000d400 {
+		status = "okay";
+		spi-max-frequency = <25000000>;
+
+		spidev0: spidev@0 {
+			compatible = "spidev";
+			reg = <0>;
+			spi-max-frequency = <25000000>;
+		};
+	};
+
+	/* SPI2: MCU SPI */
+	spi@7000d600 {
 		status = "okay";
 		spi-max-frequency = <25000000>;
 	};
 
+	/* SPI4: Apalis SPI2 */
 	spi@7000da00 {
 		status = "okay";
 		spi-max-frequency = <25000000>;
+
+		spidev1: spidev@0 {
+			compatible = "spidev";
+			reg = <0>;
+			spi-max-frequency = <25000000>;
+		};
 	};
 
 	pmc {
@@ -124,6 +158,7 @@
 		status = "okay";
 	};
 
+	/* TBD */
 	xusb@70090000 {
 		/* nvidia,uses_external_pmic;
 		nvidia,gpio_controls_muxed_ss_lanes; */

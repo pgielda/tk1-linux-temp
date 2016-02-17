@@ -102,7 +102,8 @@
 		  regulator-name = "vdd-hdmi";
 		  regulator-min-microvolt = <5000000>;
 		  regulator-max-microvolt = <5000000>;
-		  gpio = <&gpio TEGRA_GPIO(K, 6) 0>;
+/* TBD: fake Apalis GPIO4 for now */
+		  gpio = <&gpio TEGRA_GPIO(V, 5) 0>;
 		  enable-active-high;
 		  startup-delay-us = <5000>;
 
@@ -144,7 +145,8 @@
 		    regulator-name = "vdd-lcd-bl";
 		    regulator-min-microvolt = <3300000>;
 		    regulator-max-microvolt = <3300000>;
-		    gpio = <&gpio TEGRA_GPIO(P, 2) 0>;
+/* TBD: fake Apalis GPIO5 for now */
+		    gpio = <&gpio TEGRA_GPIO(DD, 5) 0>;
 		    enable-active-high;
 
 		    consumers {
@@ -161,7 +163,7 @@
 		       regulator-min-microvolt = <5000000>;
 		       regulator-max-microvolt = <5000000>;
 		       enable-active-high;
-		       gpio = <&gpio TEGRA_GPIO(H, 2) 0>;
+		       gpio = <&gpio TEGRA_GPIO(BB, 5) 0>;
 
 		       consumers {
 			       c1 {
@@ -373,8 +375,9 @@
 		      regulator-name = "reg-dcdc-1v2";
 		      regulator-min-microvolt = <1200000>;
 		      regulator-max-microvolt = <1200000>;
+/* TBD: fake Apalis GPIO3 for now */
 		      enable-active-high;
-		      gpio = <&gpio TEGRA_GPIO(R, 2) 0>;
+		      gpio = <&gpio TEGRA_GPIO(V, 4) 0>;
 
 		      consumers {
 			      c1 {
@@ -448,7 +451,8 @@
 			 regulator-min-microvolt = <3300000>;
 			 regulator-max-microvolt = <3300000>;
 			 enable-active-high;
-			 gpio = <&gpio TEGRA_GPIO(R, 0) 0>;
+/* TBD: fake Apalis GPIO2 for now */
+			 gpio = <&gpio TEGRA_GPIO(FF, 0) 0>;
 
 			 consumers {
 				 c1 {
@@ -468,7 +472,8 @@
 			 regulator-min-microvolt = <1200000>;
 			 regulator-max-microvolt = <1200000>;
 			 enable-active-high;
-			 gpio = <&gpio TEGRA_GPIO(R, 2) 0>;
+/* TBD: fake Apalis GPIO1 for now */
+			 gpio = <&gpio TEGRA_GPIO(FF, 2) 0>;
 			 startup-delay-us = <250000>;
 			 consumers {
 				 c1 {
