@@ -188,9 +188,6 @@
 						    regulator-consumer-supply = "vddio_sdmmc";
 						    regulator-consumer-device = "sdhci-tegra.0";
 					    };
-					    c6 {
-						    regulator-consumer-supply = "pwrdet_sdmmc1";
-					    };
 					    c7 {
 						    regulator-consumer-supply = "vddio_sdmmc";
 						    regulator-consumer-device = "sdhci-tegra.3";

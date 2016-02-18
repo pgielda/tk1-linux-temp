@@ -1151,41 +1151,13 @@ static irqreturn_t nct1008_irq(int irq, void *dev_id)
 
 static void nct1008_power_control(struct nct1008_data *data, bool is_enable)
 {
-	int ret;
-
 	mutex_lock(&data->mutex);
-	if (!data->nct_reg) {
-		data->nct_reg = regulator_get(&data->client->dev, "vdd");
-		if (IS_ERR_OR_NULL(data->nct_reg)) {
-			if (PTR_ERR(data->nct_reg) == -ENODEV)
-				dev_info(&data->client->dev,
-					"no regulator found for vdd."
-					" Assuming vdd is always powered");
-			else
-				dev_warn(&data->client->dev, "Error [%ld] in "
-					"getting the regulator handle for"
-					" vdd\n", PTR_ERR(data->nct_reg));
-			data->nct_reg = NULL;
-			mutex_unlock(&data->mutex);
-			return;
-		}
-	}
-	if (is_enable)
-		ret = regulator_enable(data->nct_reg);
-	else
-		ret = regulator_disable(data->nct_reg);
-
-	if (ret < 0)
-		dev_err(&data->client->dev, "Error in %s rail vdd_nct%s, "
-			"error %d\n", (is_enable) ? "enabling" : "disabling",
-			(data->chip == NCT72) ? "72" : "1008",
-			ret);
-	else
-		dev_info(&data->client->dev, "success in %s rail vdd_nct%s\n",
-			(is_enable) ? "enabling" : "disabling",
-			(data->chip == NCT72) ? "72" : "1008");
-	data->nct_disabled = !is_enable;
+	dev_info(&data->client->dev,
+		"no regulator found for vdd."
+		" Assuming vdd is always powered");
+	data->nct_reg = NULL;
 	mutex_unlock(&data->mutex);
+	return;
 }
 
 static void nct1008_setup_shutdown_warning(struct nct1008_data *data)
@@ -1439,11 +1411,7 @@ static int nct1008_probe(struct i2c_client *client,
 	mutex_init(&data->mutex);
 
 	nct1008_power_control(data, true);
-	if (!data->nct_reg) {
-		/* power up failure */
-		err = -EIO;
-		goto cleanup;
-	}
+
 	/* extended range recommended steps 1 through 4 taken care
 	 * in nct1008_configure_sensor function */
 	err = nct1008_configure_sensor(data);	/* sensor is in standby */

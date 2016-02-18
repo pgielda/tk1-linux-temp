@@ -142,28 +142,6 @@ static noinline void __init ardbeg_setup_bluedroid_pm(void)
 	platform_device_register(&ardbeg_bluedroid_pm_device);
 }
 
-static struct i2c_board_info __initdata rt5639_board_info = {
-	I2C_BOARD_INFO("rt5639", 0x1c),
-};
-
-static struct max98090_eq_cfg max98090_eq_cfg[] = {
-};
-
-static struct max98090_pdata norrin_max98090_pdata = {
-	/* Equalizer Configuration */
-	.eq_cfg = max98090_eq_cfg,
-	.eq_cfgcnt = ARRAY_SIZE(max98090_eq_cfg),
-
-	/* Microphone Configuration */
-	.digmic_left_mode = 1,
-	.digmic_right_mode = 1,
-};
-
-static struct i2c_board_info __initdata max98090_board_info = {
-	I2C_BOARD_INFO("max98090", 0x10),
-	.platform_data	= &norrin_max98090_pdata,
-};
-
 static __initdata struct tegra_clk_init_table ardbeg_clk_init_table[] = {
 	/* name		parent		rate		enabled */
 	{ "pll_m",	NULL,		0,		false},
@@ -204,46 +182,6 @@ static __initdata struct tegra_clk_init_table ardbeg_clk_init_table[] = {
 	{ "uartd",	"pll_p",	408000000,	false},
 	{ NULL,		NULL,		0,		0},
 };
-
-static struct i2c_hid_platform_data i2c_keyboard_pdata = {
-	.hid_descriptor_address = 0x0,
-};
-
-static struct i2c_board_info __initdata i2c_keyboard_board_info = {
-	I2C_BOARD_INFO("hid", 0x3B),
-	.platform_data  = &i2c_keyboard_pdata,
-};
-
-static struct i2c_hid_platform_data i2c_touchpad_pdata = {
-	.hid_descriptor_address = 0x20,
-};
-
-static struct i2c_board_info __initdata i2c_touchpad_board_info = {
-	I2C_BOARD_INFO("hid", 0x2C),
-	.platform_data  = &i2c_touchpad_pdata,
-};
-
-static void ardbeg_i2c_init(void)
-{
-	struct board_info board_info;
-	tegra_get_board_info(&board_info);
-
-	if (board_info.board_id == BOARD_PM374) {
-		i2c_register_board_info(0, &max98090_board_info, 1);
-	} else if (board_info.board_id != BOARD_PM359)
-		i2c_register_board_info(0, &rt5639_board_info, 1);
-
-	if (board_info.board_id == BOARD_PM359 ||
-		board_info.board_id == BOARD_PM358 ||
-		board_info.board_id == BOARD_PM363 ||
-		board_info.board_id == BOARD_PM374) {
-		i2c_keyboard_board_info.irq = gpio_to_irq(I2C_KB_IRQ);
-		i2c_register_board_info(1, &i2c_keyboard_board_info , 1);
-
-		i2c_touchpad_board_info.irq = gpio_to_irq(I2C_TP_IRQ);
-		i2c_register_board_info(1, &i2c_touchpad_board_info , 1);
-	}
-}
 
 #ifndef CONFIG_USE_OF
 static struct platform_device *ardbeg_uart_devices[] __initdata = {
@@ -333,44 +271,8 @@ static struct tegra_asoc_platform_data norrin_audio_pdata_max98090 = {
 
 static void ardbeg_audio_init(void)
 {
-	struct board_info board_info;
-	tegra_get_board_info(&board_info);
-	if (board_info.board_id == BOARD_PM359 ||
-			board_info.board_id == BOARD_PM358 ||
-			board_info.board_id == BOARD_PM370 ||
-			board_info.board_id == BOARD_PM374 ||
-			board_info.board_id == BOARD_PM375 ||
-			board_info.board_id == BOARD_PM377 ||
-			board_info.board_id == BOARD_PM363) {
-		/*Laguna*/
-		ardbeg_audio_pdata_rt5639.gpio_hp_det = TEGRA_GPIO_HP_DET;
-		ardbeg_audio_pdata_rt5639.gpio_hp_det_active_high = 1;
-		if (board_info.board_id != BOARD_PM363)
-			ardbeg_audio_pdata_rt5639.gpio_ldo1_en = -1;
-	} else {
-		/*Ardbeg*/
-
-		if (board_info.board_id == BOARD_E1762 ||
-			board_info.board_id == BOARD_P1761 ||
-			board_info.board_id == BOARD_E1922) {
-			ardbeg_audio_pdata_rt5639.gpio_hp_det =
-				TEGRA_GPIO_CDC_IRQ;
-			ardbeg_audio_pdata_rt5639.use_codec_jd_irq = true;
-		} else {
-			ardbeg_audio_pdata_rt5639.gpio_hp_det =
-				TEGRA_GPIO_HP_DET;
-			ardbeg_audio_pdata_rt5639.use_codec_jd_irq = false;
-		}
-		ardbeg_audio_pdata_rt5639.gpio_hp_det_active_high = 0;
-		ardbeg_audio_pdata_rt5639.gpio_ldo1_en = TEGRA_GPIO_LDO_EN;
-	}
-
-	if (board_info.board_id == BOARD_E1971) {
-		ardbeg_audio_pdata_rt5639.gpio_hp_det = TEGRA_GPIO_CDC_IRQ;
-		ardbeg_audio_pdata_rt5639.use_codec_jd_irq = true;
-		ardbeg_audio_pdata_rt5639.gpio_hp_det_active_high = 0;
-		ardbeg_audio_pdata_rt5639.gpio_ldo1_en = TEGRA_GPIO_LDO_EN;
-	}
+	ardbeg_audio_pdata_rt5639.gpio_hp_det = TEGRA_GPIO_HP_DET;
+	ardbeg_audio_pdata_rt5639.gpio_hp_det_active_high = 1;
 
 	ardbeg_audio_pdata_rt5639.codec_name = "rt5639.0-001c";
 	ardbeg_audio_pdata_rt5639.codec_dai_name = "rt5639-aif1";
@@ -632,88 +534,18 @@ static struct tegra_usb_otg_data tegra_otg_pdata = {
 static void ardbeg_usb_init(void)
 {
 	int usb_port_owner_info = tegra_get_usb_port_owner_info();
-	int modem_id = tegra_get_modem_id();
-	struct board_info bi;
-	tegra_get_pmu_board_info(&bi);
 
-	if (board_info.sku == 1100 || board_info.board_id == BOARD_P1761 ||
-					board_info.board_id == BOARD_E1784)
-		tegra_ehci1_utmi_pdata.u_data.host.turn_off_vbus_on_lp0 = true;
+/* TBD */
+	tegra_ehci1_utmi_pdata.u_data.host.turn_off_vbus_on_lp0 = true;
 
-	if (board_info.board_id == BOARD_PM359 ||
-			board_info.board_id == BOARD_PM358 ||
-			board_info.board_id == BOARD_PM370 ||
-			board_info.board_id == BOARD_PM374 ||
-			board_info.board_id == BOARD_PM375 ||
-			board_info.board_id == BOARD_PM377 ||
-			board_info.board_id == BOARD_PM363) {
-		/* Laguna */
-		/* Host cable is detected through AMS PMU Interrupt */
-		if (board_info.major_revision >= 'A' &&
-			board_info.major_revision <= 'D' &&
-			board_info.board_id == BOARD_PM375) {
-			tegra_udc_pdata.id_det_type = TEGRA_USB_VIRTUAL_ID;
-			tegra_ehci1_utmi_pdata.id_det_type =
-						TEGRA_USB_VIRTUAL_ID;
-		} else {
-			tegra_udc_pdata.id_det_type = TEGRA_USB_PMU_ID;
-			tegra_ehci1_utmi_pdata.id_det_type = TEGRA_USB_PMU_ID;
-		}
-		tegra_ehci1_utmi_pdata.id_extcon_dev_name = "as3722-extcon";
-	} else {
-		/* Ardbeg and TN8 */
-
-		/*
-		 * TN8 supports vbus changing and it can handle
-		 * vbus voltages larger then 5V.  Enable this.
-		 */
-		if (board_info.board_id == BOARD_P1761 ||
-			board_info.board_id == BOARD_E1784 ||
-			board_info.board_id == BOARD_E1780) {
-
-			/*
-			 * Set the maximum voltage that can be supplied
-			 * over USB vbus that the board supports if we use
-			 * a quick charge 2 wall charger.
-			 */
-			tegra_udc_pdata.qc2_voltage = TEGRA_USB_QC2_9V;
-			tegra_udc_pdata.u_data.dev.qc2_current_limit_ma = 1200;
-
-			/* charger needs to be set to 2A - h/w will do 1.8A */
-			tegra_udc_pdata.u_data.dev.dcp_current_limit_ma = 2000;
-		}
-
-		switch (bi.board_id) {
-		case BOARD_E1733:
-			/* Host cable is detected through PMU Interrupt */
-			tegra_udc_pdata.id_det_type = TEGRA_USB_PMU_ID;
-			tegra_ehci1_utmi_pdata.id_det_type = TEGRA_USB_PMU_ID;
-			tegra_ehci1_utmi_pdata.id_extcon_dev_name =
-							 "as3722-extcon";
-			break;
-		case BOARD_E1736:
-		case BOARD_E1769:
-		case BOARD_E1735:
-		case BOARD_E1936:
-		case BOARD_P1761:
-			/* Device cable is detected through PMU Interrupt */
-			tegra_udc_pdata.support_pmu_vbus = true;
-			tegra_udc_pdata.vbus_extcon_dev_name = "palmas-extcon";
-			tegra_ehci1_utmi_pdata.support_pmu_vbus = true;
-			tegra_ehci1_utmi_pdata.vbus_extcon_dev_name =
-							 "palmas-extcon";
-			/* Host cable is detected through PMU Interrupt */
-			tegra_udc_pdata.id_det_type = TEGRA_USB_PMU_ID;
-			tegra_ehci1_utmi_pdata.id_det_type = TEGRA_USB_PMU_ID;
-			tegra_ehci1_utmi_pdata.id_extcon_dev_name =
-							 "palmas-extcon";
-		}
-
-		/* Enable Y-Cable support */
-		if (bi.board_id == BOARD_P1761)
-			tegra_ehci1_utmi_pdata.u_data.host.support_y_cable =
-							true;
-	}
+	tegra_udc_pdata.id_det_type = TEGRA_USB_VIRTUAL_ID;
+	tegra_ehci1_utmi_pdata.id_det_type =
+				TEGRA_USB_VIRTUAL_ID;
+/* TBD
+	tegra_udc_pdata.id_det_type = TEGRA_USB_PMU_ID;
+	tegra_ehci1_utmi_pdata.id_det_type = TEGRA_USB_PMU_ID;
+*/
+	tegra_ehci1_utmi_pdata.id_extcon_dev_name = "as3722-extcon";
 
 	if (!(usb_port_owner_info & UTMI1_PORT_OWNER_XUSB)) {
 		tegra_otg_pdata.is_xhci = false;
@@ -728,27 +560,16 @@ static void ardbeg_usb_init(void)
 	tegra_udc_device.dev.platform_data = &tegra_udc_pdata;
 
 	if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB)) {
-		if (!modem_id) {
-			if ((bi.board_id != BOARD_P1761) &&
-			    (bi.board_id != BOARD_E1922) &&
-			    (bi.board_id != BOARD_E1784)) {
-				tegra_ehci2_device.dev.platform_data =
-					&tegra_ehci2_utmi_pdata;
-				platform_device_register(&tegra_ehci2_device);
-			}
-		}
+		tegra_ehci2_device.dev.platform_data =
+			&tegra_ehci2_utmi_pdata;
+		platform_device_register(&tegra_ehci2_device);
 	}
 
 	if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB)) {
-		if ((bi.board_id != BOARD_P1761) &&
-		    (bi.board_id != BOARD_E1922) &&
-		    (bi.board_id != BOARD_E1784)) {
-			tegra_ehci3_device.dev.platform_data =
-				&tegra_ehci3_utmi_pdata;
-			platform_device_register(&tegra_ehci3_device);
-		}
+		tegra_ehci3_device.dev.platform_data =
+			&tegra_ehci3_utmi_pdata;
+		platform_device_register(&tegra_ehci3_device);
 	}
-
 }
 
 static struct tegra_xusb_platform_data xusb_pdata = {
@@ -763,64 +584,12 @@ static void ardbeg_xusb_init(void)
 
 	xusb_pdata.lane_owner = (u8) tegra_get_lane_owner_info();
 
-	if (board_info.board_id == BOARD_PM359 ||
-			board_info.board_id == BOARD_PM358 ||
-			board_info.board_id == BOARD_PM374 ||
-			board_info.board_id == BOARD_PM370 ||
-			board_info.board_id == BOARD_PM363) {
-		if (board_info.board_id == BOARD_PM374 ||
-			board_info.board_id == BOARD_PM370)
-			pr_info("Norrin. 0x%x\n", board_info.board_id);
-		else
-			pr_info("Laguna. 0x%x\n", board_info.board_id);
-
-		if (!(usb_port_owner_info & UTMI1_PORT_OWNER_XUSB))
-			xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P0 |
-				TEGRA_XUSB_SS_P0);
-
-		if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB))
-			xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P1 |
-				TEGRA_XUSB_SS_P1 | TEGRA_XUSB_USB2_P2);
-
-		/* FIXME Add for UTMIP2 when have odmdata assigend */
-	} else if (board_info.board_id == BOARD_PM375) {
-		if (!(usb_port_owner_info & UTMI1_PORT_OWNER_XUSB))
-			xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P0);
-		if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB))
-			xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P2 |
-					TEGRA_XUSB_USB2_P1 | TEGRA_XUSB_SS_P0);
-		xusb_pdata.portmap &= ~(TEGRA_XUSB_SS_P1);
-	} else {
-		/* Ardbeg */
-		if (board_info.board_id == BOARD_E1781) {
-			pr_info("Shield ERS-S. 0x%x\n", board_info.board_id);
-			/* Shield ERS-S */
-			if (!(usb_port_owner_info & UTMI1_PORT_OWNER_XUSB))
-				xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P0);
-
-			if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB))
-				xusb_pdata.portmap &= ~(
-					TEGRA_XUSB_USB2_P1 | TEGRA_XUSB_SS_P0 |
-					TEGRA_XUSB_USB2_P2 | TEGRA_XUSB_SS_P1);
-		} else {
-			pr_info("Shield ERS 0x%x\n", board_info.board_id);
-			/* Shield ERS */
-			if (!(usb_port_owner_info & UTMI1_PORT_OWNER_XUSB))
-				xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P0 |
-					TEGRA_XUSB_SS_P0);
-
-			if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB))
-				xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P1 |
-					TEGRA_XUSB_USB2_P2 | TEGRA_XUSB_SS_P1);
-		}
-		/* FIXME Add for UTMIP2 when have odmdata assigend */
-	}
-
-	if (usb_port_owner_info & HSIC1_PORT_OWNER_XUSB)
-		xusb_pdata.portmap |= TEGRA_XUSB_HSIC_P0;
-
-	if (usb_port_owner_info & HSIC2_PORT_OWNER_XUSB)
-		xusb_pdata.portmap |= TEGRA_XUSB_HSIC_P1;
+	if (!(usb_port_owner_info & UTMI1_PORT_OWNER_XUSB))
+		xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P0);
+	if (!(usb_port_owner_info & UTMI2_PORT_OWNER_XUSB))
+		xusb_pdata.portmap &= ~(TEGRA_XUSB_USB2_P2 |
+				TEGRA_XUSB_USB2_P1 | TEGRA_XUSB_SS_P0);
+	xusb_pdata.portmap &= ~(TEGRA_XUSB_SS_P1);
 }
 #endif
 
@@ -1194,65 +963,6 @@ static int __init ardbeg_touch_init(void)
 	return 0;
 }
 
-static void __init ardbeg_sysedp_init(void)
-{
-	struct board_info bi;
-
-	tegra_get_board_info(&bi);
-
-	switch (bi.board_id) {
-	case BOARD_E1780:
-		if (bi.sku == 1100) {
-			tn8_new_sysedp_init();
-		}
-		else
-			shield_new_sysedp_init();
-		break;
-	case BOARD_E1971:
-	case BOARD_E1922:
-	case BOARD_E1784:
-	case BOARD_P1761:
-	case BOARD_P1765:
-		tn8_new_sysedp_init();
-		break;
-	case BOARD_PM358:
-	case BOARD_PM359:
-	case BOARD_PM375:
-	case BOARD_PM377:
-	default:
-		break;
-	}
-}
-
-static void __init ardbeg_sysedp_dynamic_capping_init(void)
-{
-	struct board_info bi;
-
-	tegra_get_board_info(&bi);
-
-	switch (bi.board_id) {
-	case BOARD_E1780:
-		if (bi.sku == 1100)
-			tn8_sysedp_dynamic_capping_init();
-		else
-			shield_sysedp_dynamic_capping_init();
-		break;
-	case BOARD_E1971:
-	case BOARD_E1922:
-	case BOARD_E1784:
-	case BOARD_P1761:
-	case BOARD_P1765:
-		tn8_sysedp_dynamic_capping_init();
-		break;
-	case BOARD_PM358:
-	case BOARD_PM359:
-	case BOARD_PM375:
-	case BOARD_PM377:
-	default:
-		break;
-	}
-}
-
 static void __init ardbeg_sysedp_batmon_init(void)
 {
 	struct board_info bi;
@@ -1312,7 +1022,6 @@ static void __init edp_init(void)
 
 static void __init tegra_ardbeg_early_init(void)
 {
-	ardbeg_sysedp_init();
 	tegra_clk_init_from_table(ardbeg_clk_init_table);
 	tegra_clk_verify_parents();
 	if (of_machine_is_compatible("nvidia,jetson-tk1"))
@@ -1420,7 +1129,6 @@ static void __init tegra_ardbeg_late_init(void)
 #ifdef CONFIG_TEGRA_XUSB_PLATFORM
 	ardbeg_xusb_init();
 #endif
-	ardbeg_i2c_init();
 	ardbeg_audio_init();
 	platform_add_devices(ardbeg_devices, ARRAY_SIZE(ardbeg_devices));
 	if (board_info.board_id == BOARD_PM374)	/* Norrin ERS */
@@ -1434,20 +1142,8 @@ static void __init tegra_ardbeg_late_init(void)
 	else
 		ardbeg_sdhci_init();
 
-	if (board_info.board_id == BOARD_PM359 ||
-			board_info.board_id == BOARD_PM358 ||
-			board_info.board_id == BOARD_PM370 ||
-			board_info.board_id == BOARD_PM375 ||
-			board_info.board_id == BOARD_PM377 ||
-			board_info.board_id == BOARD_PM363)
-		laguna_regulator_init();
-	else if (board_info.board_id == BOARD_PM374)
-		norrin_regulator_init();
-	else if (board_info.board_id == BOARD_E2548 ||
-			board_info.board_id == BOARD_P2530)
-		loki_regulator_init();
-	else
-		ardbeg_regulator_init();
+	laguna_regulator_init();
+
 	ardbeg_dtv_init();
 	ardbeg_suspend_init();
 
@@ -1483,28 +1179,10 @@ static void __init tegra_ardbeg_late_init(void)
 	tegra_wdt_recovery_init();
 #endif
 
-
-	if (board_info.board_id == BOARD_PM374 ||
-		board_info.board_id == BOARD_PM359 ||
-		board_info.board_id == BOARD_PM358 ||
-		board_info.board_id == BOARD_PM370 ||
-		board_info.board_id == BOARD_PM375 ||
-		board_info.board_id == BOARD_PM377 ||
-		board_info.board_id == BOARD_PM363) {
-		ardbeg_sensors_init();
-		norrin_soctherm_init();
-	}	else if (board_info.board_id == BOARD_E2548 ||
-			board_info.board_id == BOARD_P2530) {
-		loki_sensors_init();
-		loki_fan_init();
-		loki_soctherm_init();
-	}	else {
-		ardbeg_sensors_init();
-		ardbeg_soctherm_init();
-	}
+	ardbeg_sensors_init();
+	norrin_soctherm_init();
 
 	ardbeg_setup_bluedroid_pm();
-	ardbeg_sysedp_dynamic_capping_init();
 	ardbeg_sysedp_batmon_init();
 }
 

@@ -165,11 +165,7 @@ static struct tegra_cl_dvfs_cfg_param e1733_ardbeg_cl_dvfs_param = {
 };
 
 /* E1733 volatge map. Fixed 10mv steps from VDD_MIN to 1400mv */
-#ifdef CONFIG_ARCH_TEGRA_13x_SOC
-#define E1733_CPU_VDD_MIN	650000
-#else
 #define E1733_CPU_VDD_MIN	700000
-#endif
 #define E1733_CPU_VDD_MAP_SIZE ((1400000 - E1733_CPU_VDD_MIN) / 10000 + 1)
 static struct voltage_reg_map e1733_cpu_vdd_map[E1733_CPU_VDD_MAP_SIZE];
 static inline void e1733_fill_reg_map(int minor_ver)
@@ -291,14 +287,12 @@ int __init ardbeg_rail_alignment_init(void)
 
 	tegra_get_pmu_board_info(&pmu_board_info);
 
-#ifdef CONFIG_ARCH_TEGRA_13x_SOC
-#else
 	if (pmu_board_info.board_id == BOARD_E1735)
 		tegra12x_vdd_cpu_align(E1735_CPU_VDD_STEP_UV,
 				       E1735_CPU_VDD_MIN_UV);
 	else
 		tegra12x_vdd_cpu_align(ARDBEG_DEFAULT_CVB_ALIGNMENT, 0);
-#endif
+
 	return 0;
 }
 
@@ -321,6 +315,8 @@ int __init ardbeg_regulator_init(void)
 	ardbeg_display_regulator_init();
 
 	tegra_get_pmu_board_info(&pmu_board_info);
+
+printk("pmu_board_info.board_id = %d\n",pmu_board_info.board_id);
 
 	switch (pmu_board_info.board_id) {
 	case BOARD_E1733:
@@ -386,29 +382,13 @@ int __init ardbeg_edp_init(void)
 	tegra_get_pmu_board_info(&pmu_board_info);
 
 	regulator_mA = get_maximum_cpu_current_supported();
-	if (!regulator_mA) {
-		if (pmu_board_info.board_id == BOARD_E1936)
-			regulator_mA = 16800;
-		else if (pmu_board_info.board_id == BOARD_PM374)
-			regulator_mA = 32000;
-		else if (pmu_board_info.board_id == BOARD_PM375)
-			regulator_mA = 11000;
-		else
-			regulator_mA = 14000;
-	}
+	if (!regulator_mA) regulator_mA = 11000;
 
 	pr_info("%s: CPU regulator %d mA\n", __func__, regulator_mA);
 	tegra_init_cpu_edp_limits(regulator_mA);
 
 	/* gpu maximum current */
-	if (pmu_board_info.board_id == BOARD_E1936)
-		regulator_mA = 11200;
-	else if (pmu_board_info.board_id == BOARD_PM374)
-		regulator_mA = 16000;
-	else if (pmu_board_info.board_id == BOARD_PM375)
-		regulator_mA = 11400;
-	else
-		regulator_mA = 12000;
+	regulator_mA = 11400;
 
 	pr_info("%s: GPU regulator %d mA\n", __func__, regulator_mA);
 	tegra_init_gpu_edp_limits(regulator_mA);
@@ -765,27 +745,6 @@ static struct soctherm_platform_data t132ref_v2_soctherm_data = {
 	},
 };
 
-static struct soctherm_throttle battery_oc_throttle_t13x = {
-	.throt_mode = BRIEF,
-	.polarity = SOCTHERM_ACTIVE_LOW,
-	.priority = 50,
-	.intr = true,
-	.alarm_cnt_threshold = 15,
-	.alarm_filter = 5100000,
-	.devs = {
-		[THROTTLE_DEV_CPU] = {
-			.enable = true,
-			.depth = 50,
-			/* see @PSKIP_CONFIG_NOTE */
-			.throttling_depth = "low_throttling",
-		},
-		[THROTTLE_DEV_GPU] = {
-			.enable = true,
-			.throttling_depth = "medium_throttling",
-		},
-	},
-};
-
 static struct soctherm_throttle battery_oc_throttle_t12x = {
 	.throt_mode = BRIEF,
 	.polarity = SOCTHERM_ACTIVE_LOW,
@@ -797,31 +756,6 @@ static struct soctherm_throttle battery_oc_throttle_t12x = {
 		[THROTTLE_DEV_CPU] = {
 			.enable = true,
 			.depth = 50,
-		},
-		[THROTTLE_DEV_GPU] = {
-			.enable = true,
-			.throttling_depth = "medium_throttling",
-		},
-	},
-};
-
-static struct soctherm_throttle voltmon_throttle_t13x = {
-	.throt_mode = BRIEF,
-	.polarity = SOCTHERM_ACTIVE_LOW,
-	.priority = 50,
-	.intr = true,
-	.alarm_cnt_threshold = 100,
-	.alarm_filter = 5100000,
-	.devs = {
-		[THROTTLE_DEV_CPU] = {
-			.enable = true,
-			/* throttle depth 75% with 3.76us ramp rate */
-			.dividend = 63,
-			.divisor = 255,
-			.duration = 0,
-			.step = 0,
-			/* see @PSKIP_CONFIG_NOTE */
-			.throttling_depth = "medium_throttling",
 		},
 		[THROTTLE_DEV_GPU] = {
 			.enable = true,
@@ -959,37 +893,12 @@ int __init ardbeg_soctherm_init(void)
 		pr_warn("soctherm THERMTRIP not supported on PMU (BOARD_E%d)\n",
 			pmu_board_info.board_id);
 
-	/* Enable soc_therm OC throttling on selected platforms */
-	switch (board_info.board_id) {
-	case BOARD_E1971:
-		memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC4],
-		       &battery_oc_throttle_t13x,
-		       sizeof(battery_oc_throttle_t13x));
-		break;
-	case BOARD_P1761:
-	case BOARD_E1936:
-	case BOARD_P1765:
-		if (tegra_chip_id == TEGRA_CHIPID_TEGRA13) {
-			memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC4],
-				   &battery_oc_throttle_t13x,
-				   sizeof(battery_oc_throttle_t13x));
-			memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC1],
-				   &voltmon_throttle_t13x,
-				   sizeof(voltmon_throttle_t13x));
-		} else {
-			memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC4],
-				   &battery_oc_throttle_t12x,
-				   sizeof(battery_oc_throttle_t12x));
-			memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC1],
-				   &voltmon_throttle_t12x,
-				   sizeof(voltmon_throttle_t12x));
-		}
-
-
-		break;
-	default:
-		break;
-	}
+	memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC4],
+		   &battery_oc_throttle_t12x,
+		   sizeof(battery_oc_throttle_t12x));
+	memcpy(&ardbeg_soctherm_data.throttle[THROTTLE_OC1],
+		   &voltmon_throttle_t12x,
+		   sizeof(voltmon_throttle_t12x));
 
 	return tegra11_soctherm_init(&ardbeg_soctherm_data);
 }
