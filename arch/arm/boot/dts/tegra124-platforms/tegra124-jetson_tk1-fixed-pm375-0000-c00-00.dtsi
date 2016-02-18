@@ -48,7 +48,6 @@
 		   regulator-max-microvolt = <5000000>;
 		   gpio = <&gpio TEGRA_GPIO(N, 4) 0>;
 		   enable-active-high;
-		   gpio-open-drain;
 
 		   consumers {
 			   c1 {
@@ -74,7 +73,6 @@
 			regulator-max-microvolt = <5000000>;
 			gpio = <&gpio TEGRA_GPIO(N, 5) 0>;
 			enable-active-high;
-			gpio-open-drain;
 
 			consumers {
 				c1 {
