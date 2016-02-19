@@ -2869,6 +2869,9 @@ static int igb_probe(struct pci_dev *pdev,
 
 	/* make sure the NVM is good */
 	if (e1000_validate_nvm_checksum(hw) < 0) {
+
+#define CONFIG_MACH_APALIS_T30
+
 #ifdef CONFIG_MACH_APALIS_T30
 		/* only warn on NVM validation failures */
 		dev_warn(pci_dev_to_dev(pdev),
