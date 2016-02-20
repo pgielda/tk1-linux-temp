@@ -322,8 +322,8 @@
 			};
 			sdmmc3_clk_lb_in_pee5 { /* D6 GPIO */
 				nvidia,pins = "sdmmc3_clk_lb_in_pee5";
-				nvidia,function = "rsvd2";
-				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+				nvidia,function = "sdmmc3";
+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
 				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 			};
@@ -417,7 +417,7 @@
 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
 				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 			};
-			sdmmc3_cd_n_pee4 { /* CD# GPIO */
+			sdmmc3_clk_lb_out_pee4 { /* CD# GPIO */
 				nvidia,pins = "sdmmc3_clk_lb_out_pee4";
 				nvidia,function = "sdmmc3";
 				nvidia,pull = <TEGRA_PIN_PULL_UP>;

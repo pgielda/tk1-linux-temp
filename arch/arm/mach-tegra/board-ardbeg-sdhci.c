@@ -108,12 +108,13 @@ static struct tegra_sdhci_platform_data tegra_sdhci_platform_data0 = {
 	.power_gpio = -1,
 	.tap_delay = 0,
 	.trim_delay = 0x2,
-/* TBD */
-	.ddr_clk_limit = 41000000,
+//	.trim_delay = 0x3,
+/* TBD
+	.ddr_clk_limit = 41000000, */
 	.uhs_mask = MMC_UHS_MASK_DDR50,
 	.calib_3v3_offsets = 0x7676,
 	.calib_1v8_offsets = 0x7676,
-	.max_clk_limit = 136000000,
+/* TBD	.max_clk_limit = 136000000, */
 };
 
 static struct tegra_sdhci_platform_data tegra_sdhci_platform_data2 = {
@@ -129,6 +130,7 @@ static struct tegra_sdhci_platform_data tegra_sdhci_platform_data2 = {
 	.wp_gpio = -1,
 	.power_gpio = -1,
 	.tap_delay = 0,
+//	.trim_delay = 0x2,
 	.trim_delay = 0x3,
 	.uhs_mask = MMC_UHS_MASK_DDR50,
 	.calib_3v3_offsets = 0x7676,
@@ -220,7 +222,7 @@ int __init ardbeg_sdhci_init(void)
 		tegra_sdhci_platform_data3.boot_vcore_mv = boot_vcore_mv;
 	}
 
-/* TBD */
+/* TBD
 	tegra_sdhci_platform_data2.max_clk_limit = 204000000;
 
 	tegra_sdhci_platform_data0.default_drv_type =
@@ -229,13 +231,14 @@ int __init ardbeg_sdhci_init(void)
 	tegra_sdhci_platform_data0.max_clk_limit = 204000000;
 
 	tegra_sdhci_platform_data3.uhs_mask = MMC_MASK_HS200;
-/* TBD */
+TBD */
 
 	/*
 	 * FIXME: Set max clk limit to 200MHz for SDMMC3 for PM375.
 	 * Requesting 208MHz results in getting 204MHz from PLL_P
 	 * and CRC errors are seen with same.
 	 */
+	tegra_sdhci_platform_data0.max_clk_limit = 200000000;
 	tegra_sdhci_platform_data2.max_clk_limit = 200000000;
 
 	speedo = tegra_fuse_readl(FUSE_SOC_SPEEDO_0);
@@ -243,22 +246,22 @@ int __init ardbeg_sdhci_init(void)
 	tegra_sdhci_platform_data2.cpu_speedo = speedo;
 	tegra_sdhci_platform_data3.cpu_speedo = speedo;
 
-/* TBD */
+/* TBD
 	tegra_sdhci_platform_data0.uhs_mask =
 		MMC_UHS_MASK_SDR50 | MMC_UHS_MASK_DDR50;
 	tegra_sdhci_platform_data2.uhs_mask =
-		MMC_UHS_MASK_SDR50;
+		MMC_UHS_MASK_SDR50; */
 
-/* TBD */
-	tegra_sdhci_platform_data0.max_clk_limit = 204000000;
+/* TBD
+	tegra_sdhci_platform_data0.max_clk_limit = 204000000; */
 
-/* TBD */
+/* TBD
 	tegra_sdhci_platform_data2.uhs_mask =
 		MMC_UHS_MASK_SDR50;
 	tegra_sdhci_platform_data0.uhs_mask =
 		MMC_UHS_MASK_SDR50;
 	tegra_sdhci_platform_data3.max_clk_limit = 200000000;
-	tegra_sdhci_platform_data2.max_clk_limit = 204000000;
+	tegra_sdhci_platform_data2.max_clk_limit = 204000000; */
 
 	platform_device_register(&tegra_sdhci_device3);
 	platform_device_register(&tegra_sdhci_device0);

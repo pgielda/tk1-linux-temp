@@ -455,7 +455,7 @@
 			 consumers {
 				 c1 {
 					 regulator-consumer-supply = "vddio_sd_slot";
-					 regulator-consumer-device = "sdhci-tegra.1";
+					 regulator-consumer-device = "sdhci-tegra.0";
 				 };
 				 c2 {
 					 regulator-consumer-supply = "vddio_sd_slot";
