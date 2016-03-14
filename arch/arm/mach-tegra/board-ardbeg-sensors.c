@@ -91,6 +91,47 @@ static struct tegra_io_dpd csie_io = {
 	.io_dpd_bit		= 12,
 };
 
+#if IS_ENABLED(CONFIG_SOC_CAMERA_TC358743)
+static int ardbeg_tc358743_power(struct device *dev, int enable)
+{
+	if(enable) {
+		tegra_io_dpd_disable(&csia_io);
+	} else {
+		tegra_io_dpd_enable(&csia_io);
+	}
+	return 0;
+}
+
+static struct i2c_board_info ardbeg_tc358743_camera_i2c_device = {
+	I2C_BOARD_INFO("tc358743", 0x0f),
+};
+
+static struct tegra_camera_platform_data ardbeg_tc358743_camera_platform_data = {
+	.flip_v			= 0,
+	.flip_h			= 0,
+	.port			= TEGRA_CAMERA_PORT_CSI_A,
+	.lanes			= 2,
+	.continuous_clk		= 0,
+};
+
+static struct soc_camera_link tc358743_iclink = {
+	.bus_id		= 0, /* This must match the .id of tegra_vi01_device */
+	.board_info	= &ardbeg_tc358743_camera_i2c_device,
+	.module_name	= "tc358743",
+	.i2c_adapter_id	= 2, /* change to 1 if you have auvidea's B100 HDMI to CSI-2 Bridge */
+	.power		= ardbeg_tc358743_power,
+	.priv		= &ardbeg_tc358743_camera_platform_data,
+};
+
+static struct platform_device ardbeg_tc358743_soc_camera_device = {
+	.name	= "soc-camera-pdrv",
+	.id	= 4,
+	.dev	= {
+		.platform_data = &tc358743_iclink,
+	},
+};
+#endif
+
 static int ardbeg_ar0330_front_power_on(struct ar0330_power_rail *pw)
 {
 	int err;
@@ -1245,6 +1286,26 @@ void __init ardbeg_camera_auxdata(void *data)
 	}
 }
 
+static int ardbeg_camera_init(void)
+{
+	struct board_info board_info;
+
+	pr_debug("%s: ++\n", __func__);
+	tegra_get_board_info(&board_info);
+
+	/* put CSIA/B/C/D/E IOs into DPD mode to
+	 * save additional power for ardbeg
+	 */
+	tegra_io_dpd_enable(&csia_io);
+	//tegra_io_dpd_enable(&csib_io);
+	//tegra_io_dpd_enable(&csie_io);
+
+#if IS_ENABLED(CONFIG_SOC_CAMERA_TC358743)
+	platform_device_register(&ardbeg_tc358743_soc_camera_device);
+#endif
+	return 0;
+}
+
 static struct pid_thermal_gov_params cpu_pid_params = {
 	.max_err_temp = 4000,
 	.max_err_gain = 1000,
@@ -1611,6 +1672,8 @@ struct ntc_thermistor_adc_table {
 int __init ardbeg_sensors_init(void)
 {
 	ardbeg_nct72_init();
+
+	ardbeg_camera_init();
 
 	return 0;
 }
