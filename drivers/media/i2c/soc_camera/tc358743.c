@@ -1036,23 +1036,25 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 	fv_cnt = (v2 << 8) + v;
 	fps = fv_cnt > 0 ? DIV_ROUND_CLOSEST(10000, fv_cnt) : 0;
 
-	if (width * height * fps == 0) {
-		printk(KERN_ERR "width or height 0");
-		return 0;
-	}
-
-	if ((width != mf->width) || (height != mf->height)) {
-		printk(KERN_ERR "Wrong width/height (%d vs %d   %d vs %d)",
-		       width, mf->width, height, mf->height);
-		return 0;
-	}
-
 	printk(KERN_ERR "Image is %dx%d@%d, ~%d Gbps bandwidth (~%dMHz/lane)",
 			 width, height, fps,
 			 DIV_ROUND_UP(fps*width*height*16, 1000*1000),
 			 DIV_ROUND_UP(fps*width*height*8, 1000*1000));
 
-	if (width == 1920 && height == 1080 && fps == 60) {
+	if (width * height * fps == 0) {
+		printk(KERN_ERR "width or height 0");
+		return 0;
+	}
+
+  /* XXX fpga input hack - toshiba miscalculates the image height */
+	if ((width != mf->width)) { // || (height != mf->height)) {
+		printk(KERN_ERR "Wrong width/height (%d vs %d   %d vs %d)",
+		       width, mf->width, height, mf->height);
+		return 0;
+	}
+
+  /* XXX fpga input hack - toshiba miscalculates the image height */
+	if (width == 1920 ){ // && height == 1080 && fps == 60) {
 		/* works for 1920x1080 @ 60 */
 		ret = tc358743_set_pll(priv->client, 1075);
 	} else if (width == 1280 && height == 1024 && fps == 75) {
@@ -1113,11 +1115,14 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 		msleep(10);
 	}
 
+#if 0
+  /* XXX fpga input hack - toshiba miscalculates the image height */
 	if ((width != mf->width) || (height != mf->height)) {
 		printk(KERN_ERR "Wrong width/height (%d vs %d   %d vs %d)",
 		       width, mf->width,height, mf->height);
 		return 0;
 	}
+#endif
 
 	if (is_hdmi(sd)) {
 		u32 avi_ver = i2c_rd(priv->client, PK_AVI_1HEAD);
