@@ -24,6 +24,330 @@
 #include <media/v4l2-chip-ident.h>
 #include <media/soc_camera.h>
 
+#define PLLCTL0                               0x0020
+#define PLLCTL1                               0x0022
+
+#define MASK_PLL_PRD                          0xf000
+#define SET_PLL_PRD(prd) ((((prd) - 1) << 12) & MASK_PLL_PRD)
+
+#define MASK_PLL_FBD                          0x01ff
+#define SET_PLL_FBD(fbd) (((fbd) - 1) & MASK_PLL_FBD)
+
+#define MASK_CKEN                             0x0010
+#define MASK_RESETB                           0x0002
+#define MASK_PLL_EN                           0x0001
+
+#define MASK_NOL_1                            0
+#define MASK_NOL_2                            2
+#define MASK_NOL_3                            4
+#define MASK_NOL_4                            6
+
+/* this is true for 27 MHz refclk */
+#define REFCLK_PRE_DIVIDER                    9
+#define SET_PLL_FREQ(x) (SET_PLL_PRD(REFCLK_PRE_DIVIDER) | SET_PLL_FBD(DIV_ROUND_UP(x,3)))
+
+#define FRS_BW_25                             0x0
+#define FRS_BW_33                             0x1
+#define FRS_BW_50                             0x2
+#define FRS_BW_MAX                            0x3
+
+#define MASK_PLL_FRS                          0x0f00
+#define SET_PLL_FRS(frs,bw) (((frs | bw) << 8) & MASK_PLL_FRS)
+#define GET_FRS(x) (x < 125) ? 0xC : (x < 250) ? 0x8 : (x < 500) ? 0x4 : 0x0
+
+#define HCNT_MASK                             0x3f
+#define CALC_HDR_CNT(prep, zero) ((zero & HCNT_MASK) << 8) | (prep & HCNT_MASK)
+
+#define SYS_STATUS                            0x8520
+#define CSI_STATUS                            0x0410
+#define MASK_S_WSYNC                          0x0400
+#define VI_STATUS0                            0x8521
+#define VI_STATUS1                            0x8522
+#define AU_STATUS0                            0x8523
+#define VI_STATUS2                            0x8525
+#define VI_STATUS3                            0x8528
+
+#define EDID_MODE                             0x85C7
+#define MASK_EDID_SPEED                       0x40
+#define MASK_EDID_MODE                        0x03
+#define MASK_EDID_MODE_DISABLE                0x00
+#define MASK_EDID_MODE_DDC2B                  0x01
+#define MASK_EDID_MODE_E_DDC                  0x02
+#define EDID_LEN1                             0x85CA
+#define EDID_LEN2                             0x85CB
+
+
+#define SYSCTL                                0x0002
+#define CONFCTL                               0x0004
+#define MASK_AUTOINDEX                        0x0004
+#define FIFOCTL                               0x0006
+#define INTSTATUS                             0x0014
+#define INTMASK                               0x0016
+#define PHY_RST                               0x8535
+#define MASK_RESET_CTRL                       0x01 /* Reset active low */
+
+#define HPD_CTL                               0x8544
+#define MASK_HPD_CTL0                         0x10
+#define MASK_HPD_OUT0                         0x01
+
+#define BKSV                                  0x8800
+
+#define CSI_CONFW                             0x0500
+#define MASK_MODE_SET                         0xa0000000
+#define MASK_ADDRESS_CSI_CONTROL              0x03000000
+#define MASK_CSI_MODE                         0x8000
+#define MASK_HTXTOEN                          0x0400
+#define MASK_TXHSMD                           0x0080
+#define MASK_HSCKMD                           0x0020
+#define HSTXVREGEN                            0x0234
+#define TXOPTIONCNTRL                         0x0238
+#define MASK_CONTCLKMODE                      0x00000001
+#define STARTCNTRL                            0x0204
+#define MASK_START                            0x00000001
+#define CLW_CNTRL                             0x0140
+#define MASK_CLW_LANEDISABLE                  0x0001
+
+#define D0W_CNTRL                             0x0144
+#define MASK_D0W_LANEDISABLE                  0x0001
+
+#define D1W_CNTRL                             0x0148
+#define MASK_D1W_LANEDISABLE                  0x0001
+
+#define D2W_CNTRL                             0x014C
+#define MASK_D2W_LANEDISABLE                  0x0001
+
+#define D3W_CNTRL                             0x0150
+#define MASK_D3W_LANEDISABLE                  0x0001
+
+#define LINEINITCNT                           0x0210
+#define LPTXTIMECNT                           0x0214
+#define TCLK_HEADERCNT                        0x0218
+#define TCLK_TRAILCNT                         0x021C
+#define THS_HEADERCNT                         0x0220
+#define TWAKEUP                               0x0224
+#define TCLK_POSTCNT                          0x0228
+#define THS_TRAILCNT                          0x022C
+
+#define CSI_START                             0x0518
+#define MASK_STRT                             0x00000001
+
+#define PHY_CTL1                              0x8532
+#define PHY_CTL2                              0x8533 /* Not in REF_01 */
+#define PHY_BIAS                              0x8536 /* Not in REF_01 */
+#define PHY_CSQ                               0x853F /* Not in REF_01 */
+#define DDC_CTL                               0x8543
+
+#define SYS_FREQ0                             0x8540
+#define SYS_FREQ1                             0x8541
+
+#define NCO_F0_MOD                            0x8670
+#define MASK_NCO_F0_MOD_27MHZ                 0x01
+
+
+#define LOCKDET_REF0                          0x8630
+#define LOCKDET_REF1                          0x8631
+#define LOCKDET_REF2                          0x8632
+
+#define SYS_INT                               0x8502
+#define MASK_I_DDC                            0x01
+#define SYS_INTM                              0x8512
+#define PACKET_INTM                           0x8514
+#define CBIT_INTM                             0x8515
+#define AUDIO_INTM                            0x8516
+#define PHY_CTL0                              0x8531
+#define MASK_PHY_CTL                          0x01
+#define ANA_CTL                               0x8545
+#define MASK_APPL_PCSX                        0x30
+#define MASK_APPL_PCSX_NORMAL                 0x30
+
+#define MASK_ANALOG_ON                        0x01
+
+
+#define AVM_CTL                               0x8546
+
+
+#define MASK_PHY_AUTO_RST4                    0x04
+#define MASK_PHY_AUTO_RST3                    0x02
+#define MASK_PHY_AUTO_RST2                    0x01
+
+#define VOUT_SET2                             0x8573
+#define MASK_VOUT_422FIL_100                  0x40
+#define MASK_SEL422                           0x80
+#define MASK_VOUTCOLORMODE_AUTO               0x01
+#define MASK_VOUTCOLORMODE_THROUGH            0x00
+#define MASK_VOUTCOLORMODE_MANUAL             0x03
+
+#define VOUT_SET3                             0x8574
+#define MASK_VOUT_EXTCNT                      0x08
+
+#define PK_INT_MODE                           0x8709
+#define NO_PKT_LIMIT                          0x870B
+#define NO_PKT_CLR                            0x870C
+#define ERR_PK_LIMIT                          0x870D
+#define NO_GDB_LIMIT                          0x9007
+#define NO_PKT_LIMIT2                         0x870E
+
+#define INIT_END                              0x854A
+#define MASK_INIT_END                         0x01
+
+
+#define HDCP_MODE                             0x8560
+#define HDCP_REG1                             0x8563
+#define HDCP_REG2                             0x8564
+#define HDCP_REG3                             0x85D1
+
+#define EDID_LEN2                             0x85CB
+#define EDID_MODE                             0x85C7
+
+#define FH_MIN0                               0x85AA
+#define FH_MIN1                               0x85AB
+#define FH_MAX0                               0x85AC
+#define FH_MAX1                               0x85AD
+
+#define DE_WIDTH_H_LO                         0x8582
+#define DE_WIDTH_H_HI                         0x8583
+#define DE_WIDTH_V_LO                         0x8588
+#define DE_WIDTH_V_HI                         0x8589
+#define H_SIZE_LO                             0x858A
+#define H_SIZE_HI                             0x858B
+#define V_SIZE_LO                             0x858C
+#define V_SIZE_HI                             0x858D
+#define FV_CNT_LO                             0x85A1
+#define FV_CNT_HI                             0x85A2
+
+
+#define MASK_IRRST                            0x0800
+#define MASK_CECRST                           0x0400
+#define MASK_CTXRST                           0x0200
+#define MASK_HDMIRST                          0x0100
+
+#define MASK_AUDCHNUM_2                       0x0c00
+#define MASK_AUTOINDEX                        0x0004
+#define MASK_ABUFEN                           0x0002
+#define MASK_VBUFEN                           0x0001
+#define MASK_AUDOUTSEL_I2S                    0x0010
+
+#define MASK_YCBCRFMT                         0x00c0
+
+#define MASK_YCBCRFMT_422_12_BIT              0x0040
+#define MASK_YCBCRFMT_COLORBAR                0x0080
+#define MASK_YCBCRFMT_422_8_BIT               0x00c0
+
+#define MASK_YCBCRFMT_444                     0x0000
+
+#define MASK_INFRMEN                          0x0020
+#define PHY_EN                                0x8534
+#define MASK_ENABLE_PHY                       0x01
+
+#define MASK_PWRISO                           0x8000
+
+#define VI_MODE                               0x8570
+#define MASK_RGB_DVI                          0x8
+
+#define VI_REP                                0x8576
+#define MASK_VOUT_COLOR_SEL                   0xe0
+#define MASK_VOUT_COLOR_RGB_FULL              0x00
+#define MASK_VOUT_COLOR_RGB_LIMITED           0x20
+#define MASK_VOUT_COLOR_601_YCBCR_FULL        0x40
+#define MASK_VOUT_COLOR_601_YCBCR_LIMITED     0x60
+#define MASK_VOUT_COLOR_709_YCBCR_FULL        0x80
+#define MASK_VOUT_COLOR_709_YCBCR_LIMITED     0xa0
+#define MASK_VOUT_COLOR_FULL_TO_LIMITED       0xc0
+#define MASK_VOUT_COLOR_LIMITED_TO_FULL       0xe0
+#define MASK_IN_REP_HEN                       0x10
+#define MASK_IN_REP                           0x0f
+
+/* status regs */
+#define SYS_STATUS                            0x8520
+#define MASK_S_SYNC                           0x80
+#define MASK_S_AVMUTE                         0x40
+#define MASK_S_HDCP                           0x20
+#define MASK_S_HDMI                           0x10
+#define MASK_S_PHY_SCDT                       0x08
+#define MASK_S_PHY_PLL                        0x04
+#define MASK_S_TMDS                           0x02
+#define MASK_S_DDC5V                          0x01
+#define CSI_STATUS                            0x0410
+#define MASK_S_WSYNC                          0x0400
+#define MASK_S_TXACT                          0x0200
+#define MASK_S_RXACT                          0x0100
+#define MASK_S_HLT                            0x0001
+#define VI_STATUS1                            0x8522
+#define MASK_S_V_GBD                          0x08
+#define MASK_S_DEEPCOLOR                      0x0c
+#define MASK_S_V_422                          0x02
+#define MASK_S_V_INTERLACE                    0x01
+#define AU_STATUS0                            0x8523
+#define MASK_S_A_SAMPLE                       0x01
+#define VI_STATUS3                            0x8528
+#define MASK_S_V_COLOR                        0x1e
+#define MASK_LIMITED                          0x01
+
+#define HDMI_DET                              0x8552 /* Not in REF_01 */
+#define MASK_HDMI_DET_MOD1                    0x80
+#define MASK_HDMI_DET_MOD0                    0x40
+#define MASK_HDMI_DET_V                       0x30
+#define MASK_HDMI_DET_V_SYNC                  0x00
+#define MASK_HDMI_DET_V_ASYNC_25MS            0x10
+#define MASK_HDMI_DET_V_ASYNC_50MS            0x20
+#define MASK_HDMI_DET_V_ASYNC_100MS           0x30
+#define MASK_HDMI_DET_NUM                     0x0f
+
+#define HV_RST                                0x85AF /* Not in REF_01 */
+#define MASK_H_PI_RST                         0x20
+#define MASK_V_PI_RST                         0x10
+
+#define MASK_DDC5V_MODE_100MS                 2
+
+#define VI_MUTE                               0x857F
+#define MASK_AUTO_MUTE                        0xc0
+#define MASK_VI_MUTE                          0x10
+
+#define FORCE_MUTE                            0x8600
+#define MASK_FORCE_AMUTE                      0x10
+
+#define BCAPS                                 0x8840
+#define BSTATUS1                              0x8842
+
+#define MASK_MAX_EXCED                        0x08
+#define MASK_REPEATER                         0x40
+#define MASK_READY                            0x20
+
+#define MASK_HDMI_RSVD                        0x80
+
+#define VOUT_SET0                             0x8571
+#define VOUT_SET1                             0x8572
+
+#define CMD_AUD                               0x8601
+#define MASK_CMD_BUFINIT                      0x04
+#define MASK_CMD_LOCKDET                      0x02
+#define MASK_CMD_MUTE                         0x01
+
+#define MASK_FORCE_DMUTE                      0x01
+
+#define ERR_PK_LIMIT                          0x870D
+#define NO_PKT_LIMIT2                         0x870E
+#define PK_AVI_0HEAD                          0x8710
+#define PK_AVI_1HEAD                          0x8711
+#define PK_AVI_2HEAD                          0x8712
+#define PK_AVI_0BYTE                          0x8713
+#define PK_AVI_1BYTE                          0x8714
+#define PK_AVI_2BYTE                          0x8715
+#define PK_AVI_3BYTE                          0x8716
+#define PK_AVI_4BYTE                          0x8717
+#define PK_AVI_5BYTE                          0x8718
+#define PK_AVI_6BYTE                          0x8719
+#define PK_AVI_7BYTE                          0x871A
+#define PK_AVI_8BYTE                          0x871B
+#define PK_AVI_9BYTE                          0x871C
+#define PK_AVI_10BYTE                         0x871D
+#define PK_AVI_11BYTE                         0x871E
+#define PK_AVI_12BYTE                         0x871F
+#define PK_AVI_13BYTE                         0x8720
+#define PK_AVI_14BYTE                         0x8721
+#define PK_AVI_15BYTE                         0x8722
+#define PK_AVI_16BYTE                         0x8723
+
 struct reg_value {
 	u16 addr;
 	u32 val;
@@ -52,43 +376,6 @@ tc358743_read_reg_size [] =
 	{0x9100, 0x92ff, 1},
 	{0, 0, 0},
 };
-
-#define PLLCTL0 0x0020
-#define MASK_PLL_PRD 0xf000
-#define SET_PLL_PRD(prd) ((((prd) - 1) << 12) &\
-MASK_PLL_PRD)
-#define MASK_PLL_FBD 0x01ff
-#define SET_PLL_FBD(fbd) (((fbd) - 1) & MASK_PLL_FBD)
-#define PLLCTL1 0x0022
-#define MASK_CKEN 0x0010
-#define MASK_RESETB 0x0002
-#define MASK_PLL_EN 0x0001
-#define TXOPTIONCNTRL 0x0238
-#define MASK_CONTCLKMODE 0x00000001
-
-#define MASK_NOL_1 0
-#define MASK_NOL_2 2
-#define MASK_NOL_3 4
-#define MASK_NOL_4 6
-
-#define LANE_ENABLE 0x0
-#define LANE_DISABLE 0x1
-
-// this below is true for 27 MHz
-#define REFCLK_PRE_DIVIDER 9
-#define SET_PLL_FREQ(x) (SET_PLL_PRD(REFCLK_PRE_DIVIDER) | SET_PLL_FBD(DIV_ROUND_UP(x,3)))
-
-#define FRS_BW_25  0x0
-#define FRS_BW_33  0x1
-#define FRS_BW_50  0x2
-#define FRS_BW_MAX 0x3
-
-#define MASK_PLL_FRS 0x0f00
-#define SET_PLL_FRS(frs,bw) (((frs | bw) << 8) & MASK_PLL_FRS)
-#define GET_FRS(x) (x < 125) ? 0xC : (x < 250) ? 0x8 : (x < 500) ? 0x4 : 0x0
-
-#define HCNT_MASK 0x3f
-#define CALC_HDR_CNT(prep, zero) ((zero & HCNT_MASK) << 8) | (prep & HCNT_MASK)
 
 typedef struct timings_regs {
 	uint32_t frequency;
@@ -125,207 +412,6 @@ timings_regs timings[] = {
 	{},
 };
 
-#define SYS_STATUS                            0x8520
-#define CSI_STATUS                            0x0410
-#define MASK_S_WSYNC                          0x0400
-#define VI_STATUS0                            0x8521
-#define VI_STATUS1                            0x8522
-#define AU_STATUS0                            0x8523
-#define VI_STATUS2                            0x8525
-#define VI_STATUS3                            0x8528
-
-#define EDID_MODE                             0x85C7
-#define MASK_EDID_SPEED                       0x40
-#define MASK_EDID_MODE                        0x03
-#define MASK_EDID_MODE_DISABLE                0x00
-#define MASK_EDID_MODE_DDC2B                  0x01
-#define MASK_EDID_MODE_E_DDC                  0x02
-#define EDID_LEN1                             0x85CA
-#define EDID_LEN2                             0x85CB
-
-
-#define SYSCTL                   0x0002
-#define CONFCTL                  0x0004
-#define MASK_AUTOINDEX           0x0004
-#define FIFOCTL                  0x0006
-#define INTSTATUS                0x0014
-#define INTMASK                  0x0016
-#define PLLCTL0                  0x0020
-#define PLLCTL1                  0x0022
-#define PHY_RST                  0x8535
-#define MASK_RESET_CTRL          0x01 /* Reset active low */
-
-#define HPD_CTL                  0x8544
-#define MASK_HPD_CTL0            0x10
-#define MASK_HPD_OUT0            0x01
-
-#define BKSV                     0x8800
-
-#define CSI_CONFW                0x0500
-#define MASK_MODE_SET            0xa0000000
-#define MASK_ADDRESS_CSI_CONTROL 0x03000000
-#define MASK_CSI_MODE            0x8000
-#define MASK_HTXTOEN             0x0400
-#define MASK_TXHSMD              0x0080
-#define MASK_HSCKMD              0x0020
-#define HSTXVREGEN                            0x0234
-#define TXOPTIONCNTRL                         0x0238
-#define MASK_CONTCLKMODE                      0x00000001
-#define STARTCNTRL                            0x0204
-#define MASK_START                            0x00000001
-#define CLW_CNTRL                             0x0140
-#define MASK_CLW_LANEDISABLE                  0x0001
-
-#define D0W_CNTRL                             0x0144
-#define MASK_D0W_LANEDISABLE                  0x0001
-
-#define D1W_CNTRL                             0x0148
-#define MASK_D1W_LANEDISABLE                  0x0001
-
-#define D2W_CNTRL                             0x014C
-#define MASK_D2W_LANEDISABLE                  0x0001
-
-#define D3W_CNTRL                             0x0150
-#define MASK_D3W_LANEDISABLE                  0x0001
-
-#define LINEINITCNT                           0x0210
-#define LPTXTIMECNT                           0x0214
-#define TCLK_HEADERCNT                        0x0218
-#define TCLK_TRAILCNT                         0x021C
-#define THS_HEADERCNT                         0x0220
-#define TWAKEUP                               0x0224
-#define TCLK_POSTCNT                          0x0228
-#define THS_TRAILCNT                          0x022C
-
-#define CSI_START                             0x0518
-#define MASK_STRT                             0x00000001
-
-#define PHY_CTL1 0x8532
-#define PHY_CTL2 0x8533 /* Not in REF_01 */
-#define PHY_BIAS 0x8536 /* Not in REF_01 */
-#define PHY_CSQ 0x853F /* Not in REF_01 */
-#define DDC_CTL 0x8543
-
-#define SYS_FREQ0 0x8540
-#define SYS_FREQ1 0x8541
-
-#define NCO_F0_MOD 0x8670
-#define MASK_NCO_F0_MOD_27MHZ 0x01
-
-
-#define LOCKDET_REF0 0x8630
-#define LOCKDET_REF1 0x8631
-#define LOCKDET_REF2 0x8632
-
-#define SYS_INT 0x8502
-#define MASK_I_DDC 0x01
-#define SYS_INTM 0x8512
-#define PACKET_INTM 0x8514
-#define CBIT_INTM 0x8515
-#define AUDIO_INTM 0x8516
-#define PHY_CTL0 0x8531
-#define MASK_PHY_CTL 0x01
-#define ANA_CTL 0x8545
-#define MASK_APPL_PCSX 0x30
-#define MASK_APPL_PCSX_NORMAL 0x30
-
-#define MASK_ANALOG_ON 0x01
-
-
-#define AVM_CTL 0x8546
-
-
-#define MASK_PHY_AUTO_RST4                    0x04
-#define MASK_PHY_AUTO_RST3                    0x02
-#define MASK_PHY_AUTO_RST2                    0x01
-
-#define VOUT_SET2 0x8573
-#define MASK_VOUT_422FIL_100                  0x40
-#define MASK_SEL422 0x80
-#define MASK_VOUTCOLORMODE_AUTO                 0x01
-#define MASK_VOUTCOLORMODE_THROUGH            0x00
-#define MASK_VOUTCOLORMODE_MANUAL             0x03
-
-#define VOUT_SET3                             0x8574
-#define MASK_VOUT_EXTCNT                      0x08
-
-#define PK_INT_MODE 0x8709
-#define NO_PKT_LIMIT 0x870B
-#define NO_PKT_CLR 0x870C
-#define ERR_PK_LIMIT 0x870D
-#define NO_GDB_LIMIT 0x9007
-#define NO_PKT_LIMIT2 0x870E
-
-#define INIT_END 0x854A
-#define MASK_INIT_END 0x01
-
-
-#define HDCP_MODE 0x8560
-#define HDCP_REG1 0x8563
-#define HDCP_REG2 0x8564
-#define HDCP_REG3 0x85D1
-
-#define EDID_LEN2 0x85CB
-#define EDID_MODE 0x85C7
-
-#define FH_MIN0 0x85AA
-#define FH_MIN1 0x85AB
-#define FH_MAX0 0x85AC
-#define FH_MAX1 0x85AD
-
-#define DE_WIDTH_H_LO 0x8582
-#define DE_WIDTH_H_HI 0x8583
-#define DE_WIDTH_V_LO 0x8588
-#define DE_WIDTH_V_HI 0x8589
-#define H_SIZE_LO 0x858A
-#define H_SIZE_HI 0x858B
-#define V_SIZE_LO 0x858C
-#define V_SIZE_HI 0x858D
-#define FV_CNT_LO                             0x85A1
-#define FV_CNT_HI                             0x85A2
-
-
-#define MASK_IRRST                            0x0800
-#define MASK_CECRST                           0x0400
-#define MASK_CTXRST                           0x0200
-#define MASK_HDMIRST                          0x0100
-
-#define MASK_AUDCHNUM_2                       0x0c00
-#define MASK_AUTOINDEX                        0x0004
-#define MASK_ABUFEN                           0x0002
-#define MASK_VBUFEN                           0x0001
-#define MASK_AUDOUTSEL_I2S                    0x0010
-
-#define MASK_YCBCRFMT 0x00c0
-
-#define MASK_YCBCRFMT_422_12_BIT              0x0040
-#define MASK_YCBCRFMT_COLORBAR                0x0080
-#define MASK_YCBCRFMT_422_8_BIT               0x00c0
-
-#define MASK_YCBCRFMT_444 0x0000
-
-#define MASK_INFRMEN                          0x0020
-#define PHY_EN                                0x8534
-#define MASK_ENABLE_PHY                       0x01
-
-#define MASK_PWRISO 0x8000
-
-#define VI_MODE                               0x8570
-#define MASK_RGB_DVI                          0x8
-
-#define VI_REP                                0x8576
-#define MASK_VOUT_COLOR_SEL                   0xe0
-#define MASK_VOUT_COLOR_RGB_FULL              0x00
-#define MASK_VOUT_COLOR_RGB_LIMITED           0x20
-#define MASK_VOUT_COLOR_601_YCBCR_FULL        0x40
-#define MASK_VOUT_COLOR_601_YCBCR_LIMITED     0x60
-#define MASK_VOUT_COLOR_709_YCBCR_FULL        0x80
-#define MASK_VOUT_COLOR_709_YCBCR_LIMITED     0xa0
-#define MASK_VOUT_COLOR_FULL_TO_LIMITED       0xc0
-#define MASK_VOUT_COLOR_LIMITED_TO_FULL       0xe0
-#define MASK_IN_REP_HEN                       0x10
-#define MASK_IN_REP                           0x0f
-
 static struct reg_value tc358743_reset[] = {
 	{CONFCTL, 0, 100},
 
@@ -334,11 +420,11 @@ static struct reg_value tc358743_reset[] = {
 	{PHY_EN, 0, 100},
 	{PHY_EN, 1, 100},
 
-	// reset
+	/* reset */
 	{SYSCTL, MASK_IRRST | MASK_CECRST | MASK_CTXRST | MASK_HDMIRST, 100},
 	{SYSCTL, 0x00000000, 1000},
 
-	// set ref frequency to 27 MHz
+	/* set ref frequency to 27 MHz */
 	{SYS_FREQ0, (2700) & 0xFF, 0},
 	{SYS_FREQ1, (2700 >> 8) & 0xFF, 0},
 
@@ -347,8 +433,8 @@ static struct reg_value tc358743_reset[] = {
 	{LOCKDET_REF2, (270000 >> 16) & 0xFF, 0},
 	{FH_MIN0, (270) & 0xFF, 0},
 	{FH_MIN1, (270 >> 8) & 0xFF, 0},
-	{FH_MAX0, (27 * 66) & 0xFF, 0},  // TODO: why x66 ?
-	{FH_MAX1, ((27 * 66) >> 8) & 0xFF, 0}, // TODO: why x66 ?
+	{FH_MAX0, (27 * 66) & 0xFF, 0},
+	{FH_MAX1, ((27 * 66) >> 8) & 0xFF, 0},
 	{NCO_F0_MOD, MASK_NCO_F0_MOD_27MHZ, 0},
 };
 
@@ -386,75 +472,6 @@ static struct reg_value tc358743_2lanes_start[] = {
 	/* Output Control */
 	{CONFCTL, MASK_VBUFEN | MASK_INFRMEN | MASK_YCBCRFMT_422_8_BIT | MASK_AUTOINDEX, 0},
 };
-
-// status regs
-#define SYS_STATUS                            0x8520
-#define MASK_S_SYNC                           0x80
-#define MASK_S_AVMUTE                         0x40
-#define MASK_S_HDCP                           0x20
-#define MASK_S_HDMI                           0x10
-#define MASK_S_PHY_SCDT                       0x08
-#define MASK_S_PHY_PLL                        0x04
-#define MASK_S_TMDS                           0x02
-#define MASK_S_DDC5V                          0x01
-#define CSI_STATUS                            0x0410
-#define MASK_S_WSYNC                          0x0400
-#define MASK_S_TXACT                          0x0200
-#define MASK_S_RXACT                          0x0100
-#define MASK_S_HLT                            0x0001
-#define VI_STATUS1                            0x8522
-#define MASK_S_V_GBD                          0x08
-#define MASK_S_DEEPCOLOR                      0x0c
-#define MASK_S_V_422                          0x02
-#define MASK_S_V_INTERLACE                    0x01
-#define AU_STATUS0                            0x8523
-#define MASK_S_A_SAMPLE                       0x01
-#define VI_STATUS3                            0x8528
-#define MASK_S_V_COLOR                        0x1e
-#define MASK_LIMITED                          0x01
-
-#define HDMI_DET                              0x8552 /* Not in REF_01 */
-#define MASK_HDMI_DET_MOD1                    0x80
-#define MASK_HDMI_DET_MOD0                    0x40
-#define MASK_HDMI_DET_V                       0x30
-#define MASK_HDMI_DET_V_SYNC                  0x00
-#define MASK_HDMI_DET_V_ASYNC_25MS            0x10
-#define MASK_HDMI_DET_V_ASYNC_50MS            0x20
-#define MASK_HDMI_DET_V_ASYNC_100MS           0x30
-#define MASK_HDMI_DET_NUM                     0x0f
-
-
-#define HV_RST                                0x85AF /* Not in REF_01 */
-#define MASK_H_PI_RST                         0x20
-#define MASK_V_PI_RST                         0x10
-
-#define MASK_DDC5V_MODE_100MS                 2
-
-#define VI_MUTE                               0x857F
-#define MASK_AUTO_MUTE                        0xc0
-#define MASK_VI_MUTE                          0x10
-
-#define FORCE_MUTE                            0x8600
-#define MASK_FORCE_AMUTE                      0x10
-
-#define BCAPS                                 0x8840
-#define BSTATUS1                              0x8842
-
-#define MASK_MAX_EXCED                        0x08
-#define MASK_REPEATER                         0x40
-#define MASK_READY                            0x20
-
-#define MASK_HDMI_RSVD                        0x80
-
-#define VOUT_SET0                             0x8571
-#define VOUT_SET1                             0x8572
-
-#define CMD_AUD                               0x8601
-#define MASK_CMD_BUFINIT                      0x04
-#define MASK_CMD_LOCKDET                      0x02
-#define MASK_CMD_MUTE                         0x01
-
-#define MASK_FORCE_DMUTE 0x01
 
 static struct reg_value tc358743_setting_hdmi[] = {
 	/* HDMI interrupt mask */
@@ -592,7 +609,7 @@ static int get_register_size(u16 reg) {
 		i++;
 	}
 	if (size == 0) {
-		printk(KERN_ERR "UNKOWN REGISTER 0x%04X SIZE!!", reg);
+		printk(KERN_ERR "Unkown register 0x%04x size!!", reg);
 	}
 	return size;
 }
@@ -623,30 +640,6 @@ static uint32_t i2c_rd(struct i2c_client *client, u16 reg)
 		pr_err("%s: reading register 0x%x from 0x%x failed\n", __func__, reg, client->addr);
 	}
 	return result;
-}
-
-static void i2c_rd_buf(struct i2c_client *client, u16 reg, u8 *values, u32 n)
-{
-	int err;
-	u8 buf[2] = { reg >> 8, reg & 0xff };
-	struct i2c_msg msgs[] = {
-		{
-			.addr = client->addr,
-			.flags = 0,
-			.len = 2,
-			.buf = buf,
-		},
-		{
-			.addr = client->addr,
-			.flags = I2C_M_RD,
-			.len = n,
-			.buf = values,
-		},
-	};
-	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (err != ARRAY_SIZE(msgs)) {
-		pr_err("%s: reading register 0x%x from 0x%x failed\n", __func__, reg, client->addr);
-	}
 }
 
 static int i2c_wr(struct i2c_client *client, u16 reg, u32 val)
@@ -698,8 +691,8 @@ static int tc358743_set_pll(struct i2c_client *client, uint32_t frequency)
 	timings_regs timings = tc358743_get_best_timings(frequency);
 	if (timings.frequency == 0) return 1;
 
-	printk(KERN_ERR "Setting pll to frequency %d (%d) MHz\n",
-			 frequency, timings.frequency);
+	printk(KERN_DEBUG "Setting pll to frequency %d (%d) MHz\n",
+			   frequency, timings.frequency);
 
 	ret += i2c_wr(client, FIFOCTL, timings.fifo_delay);
 
@@ -837,7 +830,7 @@ static int tc358743_s_stream(struct v4l2_subdev *sd, int enable)
 	struct tc358743_priv *priv = to_tc358743(sd);
 
 	if (!enable) {
-		printk(KERN_ERR "DISABLING STREAM!");
+		printk(KERN_DEBUG "Disabling stream");
 		i2c_wr(priv->client, CONFCTL, 0);
 		return 0;
 	}
@@ -885,118 +878,11 @@ struct aviInfoFrame {
 	u16 srb;
 };
 
-static const char *y10Text[4] = {
-	"RGB",
-	"YCbCr 4:2:2",
-	"YCbCr 4:4:4",
-	"Future",
-};
-
-static const char *c10Text[4] = {
-	"No Data",
-	"SMPTE 170M",
-	"ITU-R 709",
-	"Extended Colorimetry information valid",
-};
-
-static const char *itcText[2] = {
-	"No Data",
-	"IT content",
-};
-
-static const char *ec210Text[8] = {
-	"xvYCC601",
-	"xvYCC709",
-	"sYCC601",
-	"AdobeYCC601",
-	"AdobeRGB",
-	"5 reserved",
-	"6 reserved",
-	"7 reserved",
-};
-
-static const char *q10Text[4] = {
-	"Default",
-	"Limited Range",
-	"Full Range",
-	"Reserved",
-};
-
-#define ERR_PK_LIMIT                          0x870D
-#define NO_PKT_LIMIT2                         0x870E
-#define PK_AVI_0HEAD                          0x8710
-#define PK_AVI_1HEAD                          0x8711
-#define PK_AVI_2HEAD                          0x8712
-#define PK_AVI_0BYTE                          0x8713
-#define PK_AVI_1BYTE                          0x8714
-#define PK_AVI_2BYTE                          0x8715
-#define PK_AVI_3BYTE                          0x8716
-#define PK_AVI_4BYTE                          0x8717
-#define PK_AVI_5BYTE                          0x8718
-#define PK_AVI_6BYTE                          0x8719
-#define PK_AVI_7BYTE                          0x871A
-#define PK_AVI_8BYTE                          0x871B
-#define PK_AVI_9BYTE                          0x871C
-#define PK_AVI_10BYTE                         0x871D
-#define PK_AVI_11BYTE                         0x871E
-#define PK_AVI_12BYTE                         0x871F
-#define PK_AVI_13BYTE                         0x8720
-#define PK_AVI_14BYTE                         0x8721
-#define PK_AVI_15BYTE                         0x8722
-#define PK_AVI_16BYTE                         0x8723
-
-
-static void parse_avi_infoframe(struct v4l2_subdev *sd, u8 *buf,
-                                struct aviInfoFrame *avi)
-{
-	avi->f17 = (buf[1] >> 7) & 0x1;
-	avi->y10 = (buf[1] >> 5) & 0x3;
-	avi->a0 = (buf[1] >> 4) & 0x1;
-	avi->b10 = (buf[1] >> 2) & 0x3;
-	avi->s10 = buf[1] & 0x3;
-	avi->c10 = (buf[2] >> 6) & 0x3;
-	avi->m10 = (buf[2] >> 4) & 0x3;
-	avi->r3210 = buf[2] & 0xf;
-	avi->itc = (buf[3] >> 7) & 0x1;
-	avi->ec210 = (buf[3] >> 4) & 0x7;
-	avi->q10 = (buf[3] >> 2) & 0x3;
-	avi->sc10 = buf[3] & 0x3;
-	avi->f47 = (buf[4] >> 7) & 0x1;
-	avi->vic = buf[4] & 0x7f;
-	avi->yq10 = (buf[5] >> 6) & 0x3;
-	avi->cn10 = (buf[5] >> 4) & 0x3;
-	avi->pr3210 = buf[5] & 0xf;
-	avi->etb = buf[6] + 256 * buf[7];
-	avi->sbb = buf[8] + 256 * buf[9];
-	avi->elb = buf[10] + 256 * buf[11];
-	avi->srb = buf[12] + 256 * buf[13];
-}
-
 static inline bool is_hdmi(struct v4l2_subdev *sd)
 {
 	struct tc358743_priv *priv = to_tc358743(sd);
 	return i2c_rd(priv->client, SYS_STATUS) & MASK_S_HDMI;
 }
-
-static const char *tc358743_mode_list[16] =
-{
-	"None",        /* 0 */
-	"VGA",         /* 1 */
-	"240p/480i",   /* 2 */
-	"288p/576i",   /* 3 */
-	"W240p/480i",  /* 4 */
-	"W288p/576i",  /* 5 */
-	"480p",        /* 6 */
-	"576p",        /* 7 */
-	"W480p",       /* 8 */
-	"W576p",       /* 9 */
-	"WW480p",      /* 10 */
-	"WW576p",      /* 11 */
-	"720p",        /* 12 */
-	"1035i",       /* 13 */
-	"1080i",       /* 14 */
-	"1080p",       /* 15 */
-};
 
 /* set the format we will capture in */
 static int tc358743_s_fmt(struct v4l2_subdev *sd,
@@ -1004,7 +890,6 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 {
 	struct tc358743_priv *priv = to_tc358743(sd);
 	int ret;
-	int i;
 	uint32_t v2, v, width, height, v_size, h_size, fv_cnt, fps;
 
 	ret = tc358743_try_fmt(sd, mf);
@@ -1036,131 +921,45 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 	fv_cnt = (v2 << 8) + v;
 	fps = fv_cnt > 0 ? DIV_ROUND_CLOSEST(10000, fv_cnt) : 0;
 
-	printk(KERN_ERR "Image is %dx%d@%d, ~%d Gbps bandwidth (~%dMHz/lane)",
-			 width, height, fps,
-			 DIV_ROUND_UP(fps*width*height*16, 1000*1000),
-			 DIV_ROUND_UP(fps*width*height*8, 1000*1000));
+	printk(KERN_DEBUG "Image is %dx%d@%d, ~%d Gbps bandwidth (~%dMHz/lane)",
+			   width, height, fps,
+			   DIV_ROUND_UP(fps*width*height*16, 1000*1000),
+			   DIV_ROUND_UP(fps*width*height*8, 1000*1000));
 
-	if (width * height * fps == 0) {
-		printk(KERN_ERR "width or height 0");
+	if (width * fps == 0) {
+		printk(KERN_ERR "width or fps 0");
 		return 0;
 	}
 
-  /* XXX fpga input hack - toshiba miscalculates the image height */
-	if ((width != mf->width)) { // || (height != mf->height)) {
-		printk(KERN_ERR "Wrong width/height (%d vs %d   %d vs %d)",
-		       width, mf->width, height, mf->height);
+	if ((width != mf->width)) {
+		printk(KERN_ERR "Wrong width (%d vs %d)", width, mf->width);
 		return 0;
 	}
 
-  /* XXX fpga input hack - toshiba miscalculates the image height */
-	if (width == 1920 ){ // && height == 1080 && fps == 60) {
+	/* XXX the chip sometimes miscalculates the height of the image,
+	 * therefore, we base the output mostly on the width of the image */
+	if (width == 1920) {
 		/* works for 1920x1080 @ 60 */
 		ret = tc358743_set_pll(priv->client, 1075);
-	} else if (width == 1280 && height == 1024 && fps == 75) {
+		/* 872 is in the middle between 1024 and 720, should be a safe
+		 * value for both 1280x720 and 1280x1024 */
+	} else if (width == 1280 && height >= 872) {
 		/* works on 1280x1024 @ 75 */
 		ret = tc358743_set_pll(priv->client, 1075);
-	} else if (width == 1280 && height == 720 && fps == 60) {
+	} else if (width == 1280 && height < 872) {
 		/* works on 1280x720 @ 60 */
 		ret = tc358743_set_pll(priv->client, 825);
-	} else if (width == 1024 && height == 768 && fps == 75) {
+	} else if (width == 1024) {
 		/* works on 1024x768 @ 75 */
 		ret = tc358743_set_pll(priv->client, 600);
-	} else if (width >= 800 && height >= 600 && fps == 75) {
+	} else if (width >= 800) {
 		/* works for 800x600@75 */
 		ret = tc358743_set_pll(priv->client, 594);
-	} else if (width == 640 && height == 480 && fps >= 70) {
+	} else if (width == 640) {
 		/* works on 640x480 @ 75 */
 		ret = tc358743_set_pll(priv->client, 500);
 	} else {
 		return 0;
-	}
-
-	for (i = 0; i < 5; i ++) {
-		u32 hdmi_detect;
-		u32 sys_status = i2c_rd(priv->client, SYS_STATUS);
-		u32 vi_status0 = i2c_rd(priv->client, VI_STATUS0); // mode
-		u32 vi_status1 = i2c_rd(priv->client, VI_STATUS1);
-		u32 vi_status2 = i2c_rd(priv->client, VI_STATUS2); // ?
-		u32 vi_status3 = i2c_rd(priv->client, VI_STATUS3);
-		u32 au_status0 = i2c_rd(priv->client, AU_STATUS0);
-		u32 vout_set2 = i2c_rd(priv->client, VOUT_SET2);
-		printk(KERN_ERR "VOUT_SET2 = %04X", vout_set2);
-
-		/* The below 0x852f register is unknown.
-		 * It contains
-		 *   1 for 640x480,
-		 *   3 for 720p and 1024x768,
-		 *   7 for 1080p,
-		 *   6 for 1280x1024,
-		 *   2 for 800x600,
-		 *   5 for 1680x1050
-		 */
-		hdmi_detect = i2c_rd(priv->client, 0x852f);
-
-		printk(KERN_ERR "%sdetected HDMI via register 0x852f [=%02X]!",
-		       hdmi_detect & 0xf ? "" : "not ", hdmi_detect);
-
-		printk(KERN_ERR "Detected mode %02x [%s] %s!",
-		       vi_status0 & 0xf, tc358743_mode_list[vi_status0 & 0xf],
-		       (vi_status1 & MASK_S_V_INTERLACE) ? "i" : "p");
-
-		printk(KERN_ERR "Color format: %s",
-				 (vi_status1 & MASK_S_V_422) ? "4:2:2" : "4:4:4 ?? RGB");
-
-		printk(KERN_ERR "Status = sys=0x%02X vi=(0x%02X 0x%02X 0x%02X 0x%02X) au=0x%02X [try %d]",
-				 sys_status, vi_status0,
-				 vi_status1, vi_status2,
-				 vi_status3, au_status0,i);
-		msleep(10);
-	}
-
-#if 0
-  /* XXX fpga input hack - toshiba miscalculates the image height */
-	if ((width != mf->width) || (height != mf->height)) {
-		printk(KERN_ERR "Wrong width/height (%d vs %d   %d vs %d)",
-		       width, mf->width,height, mf->height);
-		return 0;
-	}
-#endif
-
-	if (is_hdmi(sd)) {
-		u32 avi_ver = i2c_rd(priv->client, PK_AVI_1HEAD);
-		u32 avi_len = i2c_rd(priv->client, PK_AVI_2HEAD);
-		if (avi_ver == 2) {
-			u8 buf[14];
-			struct aviInfoFrame avi;
-			v4l2_info(sd, "AVI infoframe version %d (%d byte)\n",
-				  avi_ver, avi_len);
-			printk(KERN_ERR "detected HDMI!");
-			i2c_rd_buf(priv->client, PK_AVI_0BYTE,
-				   buf, ARRAY_SIZE(buf));
-			parse_avi_infoframe(sd, buf, &avi);
-
-			if (avi.vic) {
-				printk(KERN_ERR "vic: \n");
-				v4l2_info(sd, "\tVIC: %d\n", avi.vic);
-			}
-			if (avi.itc) {
-				printk(KERN_ERR "itc: \n");
-				v4l2_info(sd, "\t%s\n", itcText[avi.itc]);
-			}
-			if (avi.y10) {
-				printk(KERN_ERR "y10: \n");
-				v4l2_info(sd, "\t%s %s\n", y10Text[avi.y10],
-				          !avi.c10 ? "" :
-				          (avi.c10 == 0x3 ? ec210Text[avi.ec210] :
-				           c10Text[avi.c10]));
-			}
-			else {
-				printk(KERN_ERR "else: \n");
-				v4l2_info(sd, "\t%s %s\n", y10Text[avi.y10], q10Text[avi.q10]);
-			}
-		} else {
-			printk(KERN_ERR "no infoframe!\n");
-		}
-	} else {
-		printk(KERN_ERR "DVI-D - no infoframe!\n");
 	}
 
 	tc358743_write_table(priv->client,
