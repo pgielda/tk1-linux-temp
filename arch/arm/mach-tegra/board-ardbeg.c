@@ -64,6 +64,7 @@
 #include <linux/platform_data/tegra_ahci.h>
 #include <linux/irqchip/tegra.h>
 #include <sound/max98090.h>
+#include <linux/pci.h>
 
 #include <mach/irqs.h>
 #include <mach/pinmux.h>
@@ -559,8 +560,44 @@ static void __init tegra_ardbeg_dt_init(void)
 		board_info.fab, board_info.major_revision,
 		board_info.minor_revision);
 
+#define PEX_PERST_N     TEGRA_GPIO_PDD1 /* Apalis GPIO7 */
+#define RESET_MOCI_N    TEGRA_GPIO_PU4
+
+	/* Reset PLX PEX 8605 PCIe Switch plus PCIe devices on Apalis Evaluation
+	   Board */
+	gpio_request(PEX_PERST_N, "PEX_PERST_N");
+	gpio_request(RESET_MOCI_N, "RESET_MOCI_N");
+	gpio_direction_output(PEX_PERST_N, 0);
+	gpio_direction_output(RESET_MOCI_N, 0);
+	/* Must be asserted for 100 ms after power and clocks are stable */
+	mdelay(100);
+	gpio_set_value(PEX_PERST_N, 1);
+	/* Err_5: PEX_REFCLK_OUTpx/nx Clock Outputs is not Guaranteed Until
+	   900 us After PEX_PERST# De-assertion */
+	mdelay(1);
+	gpio_set_value(RESET_MOCI_N, 1);
+
+#define LAN_RESET_N TEGRA_GPIO_PS2
+
+	/* Reset I210 Gigabit Ethernet Controller */
+	gpio_request(LAN_RESET_N, "LAN_RESET_N");
+	gpio_direction_output(LAN_RESET_N, 0);
+	mdelay(100);
+	gpio_set_value(LAN_RESET_N, 1);
+
 	tegra_ardbeg_late_init();
 }
+
+/* The Apalis evaluation board needs to set the link speed to 2.5 GT/s (GEN1).
+   The default link speed setting is 5 GT/s (GEN2). 0x98 is the Link Control 2
+   PCIe Capability Register of the PEX8605 PCIe switch. The switch supports
+   link speed auto negotiation, but falsely sets the link speed to 5 GT/s. */
+static void quirk_apalis_plx_gen1(struct pci_dev *dev)
+{
+	pci_write_config_dword(dev, 0x98, 0x01);
+	mdelay(50);
+}
+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8605, quirk_apalis_plx_gen1);
 
 static void __init tegra_ardbeg_reserve(void)
 {
@@ -593,146 +630,10 @@ static void __init tegra_ardbeg_reserve(void)
 	tegra_reserve4(carveout_size, fb1_size, fb2_size, vpr_size);
 }
 
-static const char * const ardbeg_dt_board_compat[] = {
-	"nvidia,ardbeg",
-	NULL
-};
-
-static const char * const laguna_dt_board_compat[] = {
-	"nvidia,laguna",
-	NULL
-};
-
-static const char * const tn8_dt_board_compat[] = {
-	"nvidia,tn8",
-	NULL
-};
-
-static const char * const ardbeg_sata_dt_board_compat[] = {
-	"nvidia,ardbeg_sata",
-	NULL
-};
-
-static const char * const norrin_dt_board_compat[] = {
-	"nvidia,norrin",
-	NULL
-};
-
-static const char * const bowmore_dt_board_compat[] = {
-	"nvidia,bowmore",
-	NULL
-};
-
-static const char * const loki_dt_board_compat[] = {
-	"nvidia,t132loki",
-	NULL
-};
-
 static const char * const jetson_dt_board_compat[] = {
 	"nvidia,jetson-tk1",
 	NULL
 };
-
-#ifdef CONFIG_ARCH_TEGRA_13x_SOC
-DT_MACHINE_START(LOKI, "t132loki")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= loki_dt_board_compat,
-	.init_late      = tegra_init_late
-MACHINE_END
-#endif
-
-DT_MACHINE_START(LAGUNA, "laguna")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= laguna_dt_board_compat,
-	.init_late      = tegra_init_late
-MACHINE_END
-
-DT_MACHINE_START(TN8, "tn8")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= tn8_dt_board_compat,
-	.init_late      = tegra_init_late
-MACHINE_END
-
-DT_MACHINE_START(NORRIN, "norrin")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= norrin_dt_board_compat,
-	.init_late      = tegra_init_late
-MACHINE_END
-
-DT_MACHINE_START(BOWMORE, "bowmore")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= bowmore_dt_board_compat,
-	.init_late      = tegra_init_late
-MACHINE_END
-
-DT_MACHINE_START(ARDBEG, "ardbeg")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= ardbeg_dt_board_compat,
-	.init_late      = tegra_init_late
-MACHINE_END
-
-DT_MACHINE_START(ARDBEG_SATA, "ardbeg_sata")
-	.atag_offset	= 0x100,
-	.smp		= smp_ops(tegra_smp_ops),
-	.map_io		= tegra_map_common_io,
-	.reserve	= tegra_ardbeg_reserve,
-	.init_early	= tegra_ardbeg_init_early,
-	.init_irq	= irqchip_init,
-	.init_time	= clocksource_of_init,
-	.init_machine	= tegra_ardbeg_dt_init,
-	.restart	= tegra_assert_system_reset,
-	.dt_compat	= ardbeg_sata_dt_board_compat,
-	.init_late      = tegra_init_late
-
-MACHINE_END
 
 DT_MACHINE_START(JETSON_TK1, "jetson-tk1")
 	.atag_offset	= 0x100,
