@@ -284,17 +284,70 @@ static struct soctherm_platform_data norrin_soctherm_data = {
 	},
 };
 
+/* Only the diffs from norrin_soctherm_data structure */
+static struct soctherm_platform_data norrin_v1_soctherm_data = {
+	.therm = {
+		[THERM_CPU] = {
+			.zone_enable = true,
+			.passive_delay = 1000,
+			.hotspot_offset = 10000,
+		},
+		[THERM_PLL] = {
+			.zone_enable = true,
+			.passive_delay = 1000,
+			.num_trips = 3,
+			.trips = {
+				{
+					.cdev_type = "tegra-shutdown",
+					.trip_temp = 97000,
+					.trip_type = THERMAL_TRIP_CRITICAL,
+					.upper = THERMAL_NO_LIMIT,
+					.lower = THERMAL_NO_LIMIT,
+				},
+				{
+					.cdev_type = "tegra-heavy",
+					.trip_temp = 94000,
+					.trip_type = THERMAL_TRIP_HOT,
+					.upper = THERMAL_NO_LIMIT,
+					.lower = THERMAL_NO_LIMIT,
+				},
+				{
+					.cdev_type = "cpu-balanced",
+					.trip_temp = 84000,
+					.trip_type = THERMAL_TRIP_PASSIVE,
+					.upper = THERMAL_NO_LIMIT,
+					.lower = THERMAL_NO_LIMIT,
+				},
+			},
+			.tzp = &soctherm_tzp,
+		},
+	},
+};
+
 int __init norrin_soctherm_init(void)
 {
 	const int t13x_cpu_edp_temp_margin = 5000,
 		t13x_gpu_edp_temp_margin = 6000;
 	int cp_rev, ft_rev;
+	struct board_info pmu_board_info;
+	struct board_info board_info;
 	enum soctherm_therm_id therm_cpu = THERM_CPU;
+
+	tegra_get_board_info(&board_info);
 
 	cp_rev = tegra_fuse_calib_base_get_cp(NULL, NULL);
 	ft_rev = tegra_fuse_calib_base_get_ft(NULL, NULL);
 
 	pr_info("FUSE: cp_rev %d ft_rev %d\n", cp_rev, ft_rev);
+	if (cp_rev && board_info.board_id != BOARD_PM375) {
+		/* ATE rev is Old or Mid - use PLLx sensor only */
+		norrin_soctherm_data.therm[THERM_CPU] =
+			norrin_v1_soctherm_data.therm[THERM_CPU];
+		norrin_soctherm_data.therm[THERM_PLL] =
+			norrin_v1_soctherm_data.therm[THERM_PLL];
+		therm_cpu = THERM_PLL;
+		/* override CPU with PLL zone */
+	}
 
 	/* do this only for supported CP,FT fuses */
 	if ((cp_rev >= 0) && (ft_rev >= 0)) {
@@ -317,21 +370,33 @@ int __init norrin_soctherm_init(void)
 			&norrin_soctherm_data.therm[THERM_PLL].num_trips);
 	}
 
-	tegra_add_cpu_vmin_trips(
-		norrin_soctherm_data.therm[therm_cpu].trips,
-		&norrin_soctherm_data.therm[therm_cpu].num_trips);
-	tegra_add_gpu_vmin_trips(
-		norrin_soctherm_data.therm[THERM_GPU].trips,
-		&norrin_soctherm_data.therm[THERM_GPU].num_trips);
-	tegra_add_core_vmin_trips(
-		norrin_soctherm_data.therm[THERM_PLL].trips,
-		&norrin_soctherm_data.therm[THERM_PLL].num_trips);
+	if (board_info.board_id == BOARD_PM374 ||
+		board_info.board_id == BOARD_PM375 ||
+		board_info.board_id == BOARD_E1971 ||
+		board_info.board_id == BOARD_E1991) {
+		tegra_add_cpu_vmin_trips(
+			norrin_soctherm_data.therm[therm_cpu].trips,
+			&norrin_soctherm_data.therm[therm_cpu].num_trips);
+		tegra_add_gpu_vmin_trips(
+			norrin_soctherm_data.therm[THERM_GPU].trips,
+			&norrin_soctherm_data.therm[THERM_GPU].num_trips);
+		tegra_add_core_vmin_trips(
+			norrin_soctherm_data.therm[THERM_PLL].trips,
+			&norrin_soctherm_data.therm[THERM_PLL].num_trips);
+	}
 
-	tegra_add_cpu_clk_switch_trips(
-		norrin_soctherm_data.therm[THERM_CPU].trips,
-		&norrin_soctherm_data.therm[THERM_CPU].num_trips);
+	if (board_info.board_id == BOARD_PM375)
+		tegra_add_cpu_clk_switch_trips(
+			norrin_soctherm_data.therm[THERM_CPU].trips,
+			&norrin_soctherm_data.therm[THERM_CPU].num_trips);
+	tegra_get_pmu_board_info(&pmu_board_info);
 
-	norrin_soctherm_data.tshut_pmu_trip_data = &tpdata_as3722;
+	if ((pmu_board_info.board_id == BOARD_PM374) ||
+		(pmu_board_info.board_id == BOARD_PM375))
+		norrin_soctherm_data.tshut_pmu_trip_data = &tpdata_as3722;
+	else
+		pr_warn("soctherm THERMTRIP not supported on PMU (BOARD_P%d)\n",
+			pmu_board_info.board_id);
 
 	return tegra11_soctherm_init(&norrin_soctherm_data);
 }
