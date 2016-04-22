@@ -577,6 +577,7 @@ static void __init tegra_ardbeg_dt_init(void)
 	mdelay(1);
 	gpio_set_value(RESET_MOCI_N, 1);
 
+#if 0
 #define LAN_RESET_N TEGRA_GPIO_PS2
 
 	/* Reset I210 Gigabit Ethernet Controller */
@@ -584,6 +585,7 @@ static void __init tegra_ardbeg_dt_init(void)
 	gpio_direction_output(LAN_RESET_N, 0);
 	mdelay(100);
 	gpio_set_value(LAN_RESET_N, 1);
+#endif
 
 	tegra_ardbeg_late_init();
 }
