@@ -928,12 +928,12 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 
 	if (width * fps == 0) {
 		printk(KERN_ERR "width or fps 0");
-		return 0;
+		return -ENODEV;
 	}
 
 	if ((width != mf->width)) {
 		printk(KERN_ERR "Wrong width (%d vs %d)", width, mf->width);
-		return 0;
+		return -EINVAL;
 	}
 
 	/* XXX the chip sometimes miscalculates the height of the image,
@@ -959,7 +959,7 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 		/* works on 640x480 @ 75 */
 		ret = tc358743_set_pll(priv->client, 500);
 	} else {
-		return 0;
+		return -EINVAL;
 	}
 
 	tc358743_write_table(priv->client,
