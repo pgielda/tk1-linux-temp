@@ -932,8 +932,8 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 	}
 
 	if ((width != mf->width)) {
-		printk(KERN_ERR "Wrong width (%d vs %d)", width, mf->width);
-		return -EINVAL;
+		printk(KERN_ERR "Wrong width (%d vs %d)\n", width, mf->width);
+		return 0;
 	}
 
 	/* XXX the chip sometimes miscalculates the height of the image,
