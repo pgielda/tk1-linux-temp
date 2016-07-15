@@ -931,6 +931,11 @@ static int tc358743_s_fmt(struct v4l2_subdev *sd,
 		return -ENODEV;
 	}
 
+	/* HACK: do not accept strange widths or it will crash */
+	if (width != 1920) {
+		return -ENODEV;
+	}
+
 	if ((width != mf->width)) {
 		printk(KERN_ERR "Wrong width (%d vs %d)\n", width, mf->width);
 		return 0;
